@@ -27,7 +27,7 @@ export function CommentList({ commentPage, onPageChange }: CommentListProps) {
           <ListItem key={comment.id} divider>
             <ListItemText
               primary={comment.content}
-              secondary={`${comment.author.name} — ${new Date(
+              secondary={`${comment.authorName} — ${new Date(
                 comment.createdAt,
               ).toLocaleString()}`}
             />

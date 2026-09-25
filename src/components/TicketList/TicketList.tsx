@@ -53,7 +53,7 @@ export function TicketList({
               <PriorityBadge priority={ticket.priority} />
             </TableCell>
             <TableCell>{ticket.assignee?.name ?? "Unassigned"}</TableCell>
-            <TableCell>{ticket.creator.name}</TableCell>
+            <TableCell>{ticket.createdBy.name}</TableCell>
             <TableCell align="right">
               <Button
                 component={RouterLink}

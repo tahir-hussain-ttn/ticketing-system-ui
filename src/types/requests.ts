@@ -16,7 +16,7 @@ export interface TicketTransitionRequest {
   status: Status;
 }
 
-export type TicketOwnershipScope = "created" | "assigned" | "all";
+export type TicketOwnershipScope = "MINE" | "ASSIGNED" | "ALL";
 
 export interface TicketListParams {
   q?: string;

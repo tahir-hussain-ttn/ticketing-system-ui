@@ -18,16 +18,19 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => getSession()?.user ?? null);
+  const [user, setUser] = useState<User | null>(() => getSession() ?? null);
 
   useEffect(() => {
     return onSessionExpired(() => setUser(null));
   }, []);
 
   async function login(email: string, password: string): Promise<void> {
-    const session = await authApi.login({ email, password });
-    setSession(session);
-    setUser(session.user);
+    const loggedInUser = await authApi.login({ email, password });
+    if (!loggedInUser?.id) {
+      throw new Error("Login response was missing the expected user fields.");
+    }
+    setSession(loggedInUser);
+    setUser(loggedInUser);
   }
 
   async function logout(): Promise<void> {

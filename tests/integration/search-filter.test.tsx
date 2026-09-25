@@ -19,7 +19,7 @@ function seedTickets(): Ticket[] {
     priority: "LOW",
     status: i % 2 === 0 ? "OPEN" : "IN_PROGRESS",
     assignee: null,
-    creator,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   }));
@@ -30,7 +30,7 @@ function seedTickets(): Ticket[] {
     priority: "HIGH",
     status: "OPEN",
     assignee: null,
-    creator,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   });

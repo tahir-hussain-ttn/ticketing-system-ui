@@ -22,7 +22,7 @@ function seedTicket(): Ticket {
     priority: "HIGH",
     status: "OPEN",
     assignee: assignedSupport,
-    creator,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };

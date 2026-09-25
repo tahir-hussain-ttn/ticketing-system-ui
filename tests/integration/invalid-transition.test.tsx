@@ -19,7 +19,7 @@ function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
     priority: "CRITICAL",
     status: "OPEN",
     assignee: null,
-    creator,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
     ...overrides,

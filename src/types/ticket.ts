@@ -1,5 +1,9 @@
 import type { Comment } from "./comment";
-import type { User } from "./user";
+
+export interface UserSummary {
+  id: string;
+  name: string;
+}
 
 export type Priority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -26,8 +30,8 @@ export interface Ticket {
   description: string;
   priority: Priority;
   status: Status;
-  assignee: User | null;
-  creator: User;
+  assignee: UserSummary | null;
+  createdBy: UserSummary;
   createdAt: string;
   updatedAt: string;
 }

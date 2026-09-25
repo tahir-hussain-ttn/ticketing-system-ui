@@ -15,10 +15,10 @@ export interface ChatbotConversation {
   endedAt: string | null;
 }
 
-export interface ChatbotQueryResponse {
+/** Matches the backend's ChatbotTurnResponse schema (backend-api-doc.json). */
+export interface ChatbotTurnResponse {
   conversationId: string;
-  turnId: string;
-  status: "answered" | "no-match";
-  response: string | null;
-  sourceTickets: string[];
+  responseText: string | null;
+  sourceTicketIds: string[];
+  confidentMatch: boolean;
 }

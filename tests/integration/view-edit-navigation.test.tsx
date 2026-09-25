@@ -21,7 +21,7 @@ function seedTicket(): Ticket {
     priority: "MEDIUM",
     status: "OPEN",
     assignee: null,
-    creator,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };

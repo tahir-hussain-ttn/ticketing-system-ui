@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { ChatbotConversation, ChatbotTurn } from "../types/chatbot";
 import { useChatbotQuery } from "../hooks/useChatbotQuery";
+import { chatbotApi } from "../api/chatbotApi";
 
 const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
 
@@ -40,7 +41,12 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const lastActivityAt = useRef<number>(Date.now());
 
   function endConversation(): void {
-    setConversation((prev) => ({ ...prev, endedAt: new Date().toISOString() }));
+    setConversation((prev) => {
+      if (prev.id !== null && prev.endedAt === null) {
+        void chatbotApi.endConversation(prev.id);
+      }
+      return { ...prev, endedAt: new Date().toISOString() };
+    });
   }
 
   async function submitQuery(query: string): Promise<void> {
@@ -85,9 +91,11 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
           turn.id === pendingTurn.id
             ? {
                 ...turn,
-                status: result.status,
-                response: result.response,
-                sourceTickets: result.sourceTickets,
+                status: result.confidentMatch ? "answered" : "no-match",
+                response: result.confidentMatch ? result.responseText : null,
+                sourceTickets: result.confidentMatch
+                  ? result.sourceTicketIds.map((id) => `Ticket #${id}`)
+                  : [],
               }
             : turn,
         ),

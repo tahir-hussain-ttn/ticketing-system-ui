@@ -4,11 +4,11 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import { useSupportUsers } from "../../hooks/useSupportUsers";
 import { useReassignTicket } from "../../hooks/useReassignTicket";
-import type { User } from "../../types/user";
+import type { UserSummary } from "../../types/ticket";
 
 export interface ReassignControlProps {
   ticketId: string;
-  currentAssignee: User | null;
+  currentAssignee: UserSummary | null;
 }
 
 /**

@@ -37,7 +37,7 @@ export function TicketDetailPage() {
   const canComment =
     ticket !== undefined &&
     user !== null &&
-    (user.id === ticket.creator.id || user.id === ticket.assignee?.id);
+    (user.id === ticket.createdBy.id || user.id === ticket.assignee?.id);
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>

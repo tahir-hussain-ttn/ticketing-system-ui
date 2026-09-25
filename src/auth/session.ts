@@ -1,8 +1,8 @@
-import type { AuthSession } from "../types/user";
+import type { User } from "../types/user";
 
 const STORAGE_KEY = "ticketing.session";
 
-let currentSession: AuthSession | null = null;
+let currentSession: User | null = null;
 let hydrated = false;
 const expiryListeners = new Set<() => void>();
 
@@ -14,23 +14,19 @@ function hydrate(): void {
   const stored = sessionStorage.getItem(STORAGE_KEY);
   if (stored) {
     try {
-      currentSession = JSON.parse(stored) as AuthSession;
+      currentSession = JSON.parse(stored) as User;
     } catch {
       currentSession = null;
     }
   }
 }
 
-export function getSession(): AuthSession | null {
+export function getSession(): User | null {
   hydrate();
   return currentSession;
 }
 
-export function getToken(): string | null {
-  return getSession()?.token ?? null;
-}
-
-export function setSession(session: AuthSession): void {
+export function setSession(session: User): void {
   currentSession = session;
   hydrated = true;
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));

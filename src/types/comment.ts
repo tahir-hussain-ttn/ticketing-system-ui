@@ -1,10 +1,8 @@
-import type { User } from "./user";
-
 export interface Comment {
   id: string;
   ticketId: string;
   content: string;
-  author: User;
+  authorName: string;
   createdAt: string;
 }
 

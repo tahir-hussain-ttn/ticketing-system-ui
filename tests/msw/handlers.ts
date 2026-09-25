@@ -8,10 +8,10 @@ import { setSession, clearSession } from "../../src/auth/session";
 const BASE_URL = "http://localhost:8080";
 
 export const MOCK_USERS: User[] = [
-  { id: "u-support-1", name: "Sam Support", role: "SUPPORT" },
-  { id: "u-support-2", name: "Sasha Support", role: "SUPPORT" },
-  { id: "u-general-1", name: "Gina General", role: "GENERAL" },
-  { id: "u-admin-1", name: "Alex Admin", role: "ADMIN" },
+  { id: "u-support-1", name: "Sam Support", email: "sam@example.com", role: "SUPPORT" },
+  { id: "u-support-2", name: "Sasha Support", email: "sasha@example.com", role: "SUPPORT" },
+  { id: "u-general-1", name: "Gina General", email: "gina@example.com", role: "GENERAL" },
+  { id: "u-admin-1", name: "Alex Admin", email: "alex@example.com", role: "ADMIN" },
 ];
 
 const CREDENTIALS: Record<string, { password: string; userId: string }> = {
@@ -20,26 +20,25 @@ const CREDENTIALS: Record<string, { password: string; userId: string }> = {
   "alex@example.com": { password: "password123", userId: "u-admin-1" },
 };
 
-function tokenFor(userId: string): string {
-  return `token:${userId}`;
-}
+// The real backend authenticates via an httpOnly session cookie (there is no
+// bearer token in LoginResponse — see backend-api-doc.json). node/undici
+// fetch in the jsdom test environment doesn't maintain a cookie jar across
+// requests, so this in-memory server-side session stands in for it.
+let currentUser: User | undefined;
 
 /** Test helper: seed a signed-in session directly, bypassing the login UI. */
 export function seedSession(user: User): void {
-  setSession({ user, token: tokenFor(user.id) });
+  currentUser = user;
+  setSession(user);
 }
 
 export function resetSession(): void {
+  currentUser = undefined;
   clearSession();
 }
 
-function userFromRequest(request: Request): User | undefined {
-  const auth = request.headers.get("Authorization");
-  if (!auth?.startsWith("Bearer token:")) {
-    return undefined;
-  }
-  const userId = auth.slice("Bearer token:".length);
-  return MOCK_USERS.find((u) => u.id === userId);
+function userFromRequest(_request: Request): User | undefined {
+  return currentUser;
 }
 
 export const ticketStore: Ticket[] = [];
@@ -138,11 +137,11 @@ function canView(user: User, ticket: Ticket): boolean {
   if (user.role === "SUPPORT" || user.role === "ADMIN") {
     return true;
   }
-  return ticket.creator.id === user.id || ticket.assignee?.id === user.id;
+  return ticket.createdBy.id === user.id || ticket.assignee?.id === user.id;
 }
 
 function canComment(user: User, ticket: Ticket): boolean {
-  return ticket.creator.id === user.id || ticket.assignee?.id === user.id;
+  return ticket.createdBy.id === user.id || ticket.assignee?.id === user.id;
 }
 
 let nextConversationId = 1;
@@ -171,10 +170,12 @@ export const handlers = [
     }
 
     const user = MOCK_USERS.find((u) => u.id === credential.userId)!;
-    return HttpResponse.json({ user, token: tokenFor(user.id) });
+    currentUser = user;
+    return HttpResponse.json(user);
   }),
 
   http.post(`${BASE_URL}/api/v1/auth/logout`, () => {
+    currentUser = undefined;
     return new HttpResponse(null, { status: 204 });
   }),
 
@@ -207,13 +208,18 @@ export const handlers = [
     const size = Number(url.searchParams.get("size") ?? "20");
 
     let filtered = ticketStore;
-    if (scope === "created") {
-      filtered = filtered.filter((t) => t.creator.id === user.id);
-    } else if (scope === "assigned") {
+    if (scope === "MINE") {
+      filtered = filtered.filter((t) => t.createdBy.id === user.id);
+    } else if (scope === "ASSIGNED") {
       filtered = filtered.filter((t) => t.assignee?.id === user.id);
+    } else if (scope !== null && scope !== "ALL") {
+      return HttpResponse.json(
+        validationError(path, "scope", "Unrecognized scope value"),
+        { status: 400 },
+      );
     } else if (user.role === "GENERAL") {
-      // "all" (or unspecified) default for GENERAL: only tickets they created.
-      filtered = filtered.filter((t) => t.creator.id === user.id);
+      // "ALL" (or unspecified) default for GENERAL: only tickets they created.
+      filtered = filtered.filter((t) => t.createdBy.id === user.id);
     }
 
     if (q) {
@@ -271,7 +277,7 @@ export const handlers = [
       priority: body.priority ?? "LOW",
       status: "OPEN",
       assignee: autoAssignee,
-      creator: user,
+      createdBy: user,
       createdAt: now,
       updatedAt: now,
     };
@@ -477,7 +483,7 @@ export const handlers = [
         id: String(nextCommentId++),
         ticketId: ticket.id,
         content: body.content,
-        author: user,
+        authorName: user.name,
         createdAt: new Date().toISOString(),
       };
       commentStore[ticket.id] = [...(commentStore[ticket.id] ?? []), comment];
@@ -486,53 +492,53 @@ export const handlers = [
   ),
 
   // --- Chatbot ---
-  http.post(
-    `${BASE_URL}/api/v1/chatbot/conversations/:conversationId/queries`,
-    async ({ params, request }) => resolveChatbotQuery(params.conversationId as string, request),
-  ),
-  http.post(`${BASE_URL}/api/v1/chatbot/conversations/queries`, async ({ request }) =>
-    resolveChatbotQuery(undefined, request),
-  ),
-];
+  http.post(`${BASE_URL}/api/v1/chatbot/messages`, async ({ request }) => {
+    const path = "/api/v1/chatbot/messages";
+    const user = userFromRequest(request);
+    if (!user) {
+      return HttpResponse.json(unauthorizedError(path), { status: 401 });
+    }
 
-async function resolveChatbotQuery(conversationId: string | undefined, request: Request) {
-  const path = "/api/v1/chatbot/conversations/queries";
-  const user = userFromRequest(request);
-  if (!user) {
-    return HttpResponse.json(unauthorizedError(path), { status: 401 });
-  }
+    const body = (await request.json()) as {
+      query?: string;
+      conversationId?: string;
+    };
+    const query = body.query?.trim() ?? "";
+    if (!query) {
+      return HttpResponse.json(
+        validationError(path, "query", "Query must not be blank"),
+        { status: 400 },
+      );
+    }
 
-  const body = (await request.json()) as { query?: string };
-  const query = body.query?.trim() ?? "";
-  if (!query) {
-    return HttpResponse.json(
-      validationError(path, "query", "Query must not be blank"),
-      { status: 400 },
-    );
-  }
+    const resolvedConversationId =
+      body.conversationId ?? `conv-${nextConversationId++}`;
 
-  const resolvedConversationId = conversationId ?? `conv-${nextConversationId++}`;
+    if (/unavailable|fail/i.test(query)) {
+      return HttpResponse.json(serviceUnavailableError(path), { status: 503 });
+    }
 
-  if (/unavailable|fail/i.test(query)) {
-    return HttpResponse.json(serviceUnavailableError(path), { status: 503 });
-  }
+    if (/nomatch/i.test(query)) {
+      return HttpResponse.json({
+        conversationId: resolvedConversationId,
+        responseText: null,
+        sourceTicketIds: [],
+        confidentMatch: false,
+      });
+    }
 
-  if (/nomatch/i.test(query)) {
+    const firstTicket = ticketStore[0];
     return HttpResponse.json({
       conversationId: resolvedConversationId,
-      turnId: `turn-${Date.now()}`,
-      status: "no-match",
-      response: null,
-      sourceTickets: [],
+      responseText:
+        "Restart the affected service; this resolved the same issue previously.",
+      sourceTicketIds: firstTicket ? [firstTicket.id] : ["1"],
+      confidentMatch: true,
     });
-  }
+  }),
 
-  const firstTicket = ticketStore[0];
-  return HttpResponse.json({
-    conversationId: resolvedConversationId,
-    turnId: `turn-${Date.now()}`,
-    status: "answered",
-    response: "Restart the affected service; this resolved the same issue previously.",
-    sourceTickets: firstTicket ? [`Ticket #${firstTicket.id}`] : ["Ticket #1"],
-  });
-}
+  http.post(
+    `${BASE_URL}/api/v1/chatbot/conversations/:conversationId/end`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+];

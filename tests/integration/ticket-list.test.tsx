@@ -33,7 +33,7 @@ describe("Ticket list", () => {
         priority: "CRITICAL",
         status: "IN_PROGRESS",
         assignee: support1,
-        creator: admin,
+        createdBy: admin,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

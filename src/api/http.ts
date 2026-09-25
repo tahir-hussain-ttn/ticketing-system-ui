@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../config/env";
 import type { ApiError } from "../types/apiError";
-import { getToken, notifySessionExpired } from "../auth/session";
+import { notifySessionExpired } from "../auth/session";
 
 export class HttpError extends Error {
   constructor(
@@ -51,14 +51,11 @@ export async function request<TResponse>(
   const headers: Record<string, string> = options.body
     ? { "Content-Type": "application/json" }
     : {};
-  const token = getToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
 
   const response = await fetch(buildUrl(path, options.query), {
     method: options.method ?? "GET",
     headers,
+    credentials: "include",
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 

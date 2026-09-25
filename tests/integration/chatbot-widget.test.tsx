@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Link, Route, Routes } from "react-router-dom";
+import { http, HttpResponse } from "msw";
+import { server } from "../msw/server";
 import { AuthProvider } from "../../src/context/AuthContext";
 import { ChatbotProvider } from "../../src/context/ChatbotContext";
 import { ChatbotWidget } from "../../src/components/ChatbotWidget/ChatbotWidget";
@@ -51,7 +53,7 @@ function seedResolvedTicket(): Ticket {
     priority: "MEDIUM",
     status: "RESOLVED",
     assignee: null,
-    creator: generalUser,
+    createdBy: generalUser,
     createdAt: now,
     updatedAt: now,
   };
@@ -149,6 +151,33 @@ describe("Chatbot widget (FR-013–FR-020)", () => {
 
     expect(await screen.findByText(/no confident match found/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /raise a ticket/i })).toBeInTheDocument();
+  });
+
+  it("calls the backend to end the conversation when 'End chat' is clicked", async () => {
+    seedSession(generalUser);
+    seedResolvedTicket();
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: /open resolution assistant/i }));
+    await user.type(screen.getByLabelText(/ask a question/i), "printer is broken");
+    await user.click(screen.getByRole("button", { name: /send/i }));
+    await screen.findByText(/Based on: Ticket #42/);
+
+    let endedConversationId: string | undefined;
+    server.use(
+      http.post(
+        "http://localhost:8080/api/v1/chatbot/conversations/:conversationId/end",
+        ({ params }) => {
+          endedConversationId = params.conversationId as string;
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+
+    await user.click(screen.getByRole("button", { name: /end chat/i }));
+
+    await waitFor(() => expect(endedConversationId).toBeDefined());
   });
 
   it("shows a distinct service-unavailable message on backend failure", async () => {

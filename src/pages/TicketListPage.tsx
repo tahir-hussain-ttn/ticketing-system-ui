@@ -23,20 +23,20 @@ export function TicketListPage() {
   const [page, setPage] = useState(0);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status | "">("");
-  const [scope, setScope] = useState<TicketOwnershipScope>("all");
+  const [scope, setScope] = useState<TicketOwnershipScope>("ALL");
 
   // GENERAL users are never an assignee, so "assigned to me" is never
   // meaningful for that role (FR-024a).
   const scopeOptions: { value: TicketOwnershipScope; label: string }[] =
     user?.role === "GENERAL"
       ? [
-          { value: "created", label: "Created by me" },
-          { value: "all", label: "All" },
+          { value: "MINE", label: "Created by me" },
+          { value: "ALL", label: "All" },
         ]
       : [
-          { value: "created", label: "Created by me" },
-          { value: "assigned", label: "Assigned to me" },
-          { value: "all", label: "All" },
+          { value: "MINE", label: "Created by me" },
+          { value: "ASSIGNED", label: "Assigned to me" },
+          { value: "ALL", label: "All" },
         ];
 
   const { data, isLoading, isError } = useTickets({

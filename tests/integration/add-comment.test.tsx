@@ -20,7 +20,7 @@ function seedTicket(): Ticket {
     priority: "MEDIUM",
     status: "OPEN",
     assignee: null,
-    creator,
+    createdBy: creator,
     createdAt: now,
     updatedAt: now,
   };
@@ -80,7 +80,7 @@ describe("Add comment", () => {
       id: String(i + 1),
       ticketId: "1",
       content: `Update number ${i + 1}`,
-      author: creator,
+      authorName: creator.name,
       createdAt: new Date(now.getTime() + i * 1000).toISOString(),
     }));
     commentStore["1"] = comments;

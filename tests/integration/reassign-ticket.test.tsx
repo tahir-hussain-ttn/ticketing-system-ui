@@ -27,7 +27,7 @@ function seedTicket(assignee: User | null = supportUser): Ticket {
     priority: "MEDIUM",
     status: "OPEN",
     assignee,
-    creator: generalUser,
+    createdBy: generalUser,
     createdAt: now,
     updatedAt: now,
   };

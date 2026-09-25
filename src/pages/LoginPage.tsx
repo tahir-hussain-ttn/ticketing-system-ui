@@ -43,6 +43,8 @@ export function LoginPage() {
     } catch (error) {
       if (error instanceof HttpError) {
         setGeneralError(error.apiError.message);
+      } else if (error instanceof Error) {
+        setGeneralError(error.message);
       } else {
         setGeneralError("Unable to reach the server. Please try again.");
       }

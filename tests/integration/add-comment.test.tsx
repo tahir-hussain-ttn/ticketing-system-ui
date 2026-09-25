@@ -4,9 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
-import { resetTicketStore, commentStore } from "../msw/handlers";
+import { AuthProvider } from "../../src/context/AuthContext";
+import { resetTicketStore, commentStore, seedSession, MOCK_USERS } from "../msw/handlers";
 import type { Ticket } from "../../src/types/ticket";
 import type { Comment } from "../../src/types/comment";
+
+const creator = MOCK_USERS.find((u) => u.id === "u-general-1")!;
 
 function seedTicket(): Ticket {
   const now = new Date().toISOString();
@@ -16,6 +19,8 @@ function seedTicket(): Ticket {
     description: "Outlook stuck on syncing since this morning.",
     priority: "MEDIUM",
     status: "OPEN",
+    assignee: null,
+    creator,
     createdAt: now,
     updatedAt: now,
   };
@@ -24,14 +29,17 @@ function seedTicket(): Ticket {
 }
 
 function renderDetail() {
+  seedSession(creator);
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/tickets/1"]}>
-        <Routes>
-          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter initialEntries={["/tickets/1"]}>
+          <Routes>
+            <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AuthProvider>
     </QueryClientProvider>,
   );
 }
@@ -72,6 +80,7 @@ describe("Add comment", () => {
       id: String(i + 1),
       ticketId: "1",
       content: `Update number ${i + 1}`,
+      author: creator,
       createdAt: new Date(now.getTime() + i * 1000).toISOString(),
     }));
     commentStore["1"] = comments;

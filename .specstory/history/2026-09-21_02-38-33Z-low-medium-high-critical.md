@@ -13866,3 +13866,4601 @@ _**Agent (claude-sonnet-5 2026-09-21 09:10:37Z)**_
 `.env.local` created with `VITE_API_BASE_URL=http://localhost:8080`. Restart dev server (`npm run dev`) — error gone.
 
 Note: real backend from `backend-api-doc.json` must actually run at that URL for API calls to succeed; edit `.env.local` if yours runs elsewhere. File stays git-ignored, never commit it.
+
+---
+
+_**User (2026-09-21 11:11:57Z)**_
+
+<command-message>speckit-specify</command-message>
+<command-name>/speckit-specify</command-name>
+<command-args>I need to update the spec according to below requirement
+1. In the home page where we have ticket listing, there should be a `view` button which should redirect to a page where we could see ticket details in read only mode. We should also see the comments there. We should see an edit button which should lead us to ticket edit page where we should be able to update the ticket details.
+2. After creating or updating a ticket we should be redirected to the ticket detail page.
+3. We should see proper breadcrumbs on each page</command-args>
+
+---
+
+_**User (2026-09-21 11:11:57Z)**_
+
+Base directory for this skill: /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/.claude/skills/speckit-specify
+
+## User Input
+
+```text
+I need to update the spec according to below requirement
+1. In the home page where we have ticket listing, there should be a `view` button which should redirect to a page where we could see ticket details in read only mode. We should also see the comments there. We should see an edit button which should lead us to ticket edit page where we should be able to update the ticket details.
+2. After creating or updating a ticket we should be redirected to the ticket detail page.
+3. We should see proper breadcrumbs on each page
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Pre-Execution Checks
+
+**Check for extension hooks (before specification)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_specify` key
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to the Outline.
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Outline
+
+The text the user typed after `/speckit-specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `I need to update the spec according to below requirement
+1. In the home page where we have ticket listing, there should be a `view` button which should redirect to a page where we could see ticket details in read only mode. We should also see the comments there. We should see an edit button which should lead us to ticket edit page where we should be able to update the ticket details.
+2. After creating or updating a ticket we should be redirected to the ticket detail page.
+3. We should see proper breadcrumbs on each page` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
+
+Given that feature description, do this:
+
+1. **Generate a concise short name** (2-4 words) for the feature:
+   - Analyze the feature description and extract the most meaningful keywords
+   - Create a 2-4 word short name that captures the essence of the feature
+   - Use action-noun format when possible (e.g., "add-user-auth", "fix-payment-bug")
+   - Preserve technical terms and acronyms (OAuth2, API, JWT, etc.)
+   - Keep it concise but descriptive enough to understand the feature at a glance
+   - Examples:
+     - "I want to add user authentication" → "user-auth"
+     - "Implement OAuth2 integration for the API" → "oauth2-api-integration"
+     - "Create a dashboard for analytics" → "analytics-dashboard"
+     - "Fix payment processing timeout bug" → "fix-payment-timeout"
+
+2. **Branch creation** (optional, via hook):
+
+   If a `before_specify` hook ran successfully in the Pre-Execution Checks above, it will have created/switched to a git branch and output JSON containing `BRANCH_NAME` and `FEATURE_NUM`. Note these values for reference, but the branch name does **not** dictate the spec directory name.
+
+   If the user explicitly provided `GIT_BRANCH_NAME`, pass it through to the hook so the branch script uses the exact value as the branch name (bypassing all prefix/suffix generation).
+
+3. **Create the spec feature directory**:
+
+   Specs live under the default `specs/` directory unless the user explicitly provides `SPECIFY_FEATURE_DIRECTORY`.
+
+   **Resolution order for `SPECIFY_FEATURE_DIRECTORY`**:
+   1. If the user explicitly provided `SPECIFY_FEATURE_DIRECTORY` (e.g., via environment variable, argument, or configuration), use it as-is
+   2. Otherwise, auto-generate it under `specs/`:
+      - Check `.specify/init-options.json` for `feature_numbering` (preferred) or `branch_numbering` (deprecated, migration only — will be removed in a future release)
+      - If `"timestamp"`: prefix is `YYYYMMDD-HHMMSS` (current timestamp)
+      - If `"sequential"` or absent: prefix is `NNN` (next available 3-digit number after scanning existing directories in `specs/`)
+      - Construct the directory name: `<prefix>-<short-name>` (e.g., `003-user-auth` or `20260319-143022-user-auth`)
+      - Set `SPECIFY_FEATURE_DIRECTORY` to `specs/<directory-name>`
+      - If `branch_numbering` was used (and `feature_numbering` was absent), emit a one-line warning: "⚠️ `branch_numbering` in init-options.json is deprecated. Rename to `feature_numbering`."
+
+   **Create the directory and spec file**:
+   - `mkdir -p SPECIFY_FEATURE_DIRECTORY`
+   - Resolve the active `spec-template` through the Spec Kit preset/template resolution stack (equivalent to `specify preset resolve spec-template`)
+   - Copy the resolved `spec-template` file to `SPECIFY_FEATURE_DIRECTORY/spec.md` as the starting point
+   - Set `SPEC_FILE` to `SPECIFY_FEATURE_DIRECTORY/spec.md`
+   - Persist the resolved path to `.specify/feature.json`:
+     ```json
+     {
+       "feature_directory": "<resolved feature dir>"
+     }
+     ```
+     Write the actual resolved directory path value (for example, `specs/003-user-auth`), not the literal string `SPECIFY_FEATURE_DIRECTORY`.
+     This allows downstream commands (`/speckit-plan`, `/speckit-tasks`, etc.) to locate the feature directory without relying on git branch name conventions.
+
+   **IMPORTANT**:
+   - You must only create one feature per `/speckit-specify` invocation
+   - The spec directory name and the git branch name are independent — they may be the same but that is the user's choice
+   - The spec directory and file are always created by this command, never by the hook
+
+4. Load the resolved active `spec-template` file to understand required sections.
+
+5. **IF EXISTS**: Load `.specify/memory/constitution.md` for project principles and governance constraints.
+
+6. Follow this execution flow:
+    1. Parse user description from arguments
+       If empty: ERROR "No feature description provided"
+    2. Extract key concepts from description
+       Identify: actors, actions, data, constraints
+    3. For unclear aspects:
+       - Make informed guesses based on context and industry standards
+       - Only mark with [NEEDS CLARIFICATION: specific question] if:
+         - The choice significantly impacts feature scope or user experience
+         - Multiple reasonable interpretations exist with different implications
+         - No reasonable default exists
+       - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
+       - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
+    4. Fill User Scenarios & Testing section
+       If no clear user flow: ERROR "Cannot determine user scenarios"
+    5. Generate Functional Requirements
+       Each requirement must be testable
+       Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
+    6. Define Success Criteria
+       Create measurable, technology-agnostic outcomes
+       Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
+       Each criterion must be verifiable without implementation details
+    7. Identify Key Entities (if data involved)
+    8. Return: SUCCESS (spec ready for planning)
+
+7. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+
+8. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
+
+   a. **Create Spec Quality Checklist**: Generate a checklist file at `SPECIFY_FEATURE_DIRECTORY/checklists/requirements.md` using the checklist template structure with these validation items:
+
+      ```markdown
+      # Specification Quality Checklist: [FEATURE NAME]
+
+      **Purpose**: Validate specification completeness and quality before proceeding to planning
+      **Created**: [DATE]
+      **Feature**: [Link to spec.md]
+
+      ## Content Quality
+
+      - [ ] No implementation details (languages, frameworks, APIs)
+      - [ ] Focused on user value and business needs
+      - [ ] Written for non-technical stakeholders
+      - [ ] All mandatory sections completed
+
+      ## Requirement Completeness
+
+      - [ ] No [NEEDS CLARIFICATION] markers remain
+      - [ ] Requirements are testable and unambiguous
+      - [ ] Success criteria are measurable
+      - [ ] Success criteria are technology-agnostic (no implementation details)
+      - [ ] All acceptance scenarios are defined
+      - [ ] Edge cases are identified
+      - [ ] Scope is clearly bounded
+      - [ ] Dependencies and assumptions identified
+
+      ## Feature Readiness
+
+      - [ ] All functional requirements have clear acceptance criteria
+      - [ ] User scenarios cover primary flows
+      - [ ] Feature meets measurable outcomes defined in Success Criteria
+      - [ ] No implementation details leak into specification
+
+      ## Notes
+
+      - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
+      ```
+
+   b. **Run Validation Check**: Review the spec against each checklist item:
+      - For each item, determine if it passes or fails
+      - Document specific issues found (quote relevant spec sections)
+
+   c. **Handle Validation Results**:
+
+      - **If all items pass**: Mark checklist complete and proceed to the Mandatory Post-Execution Hooks section
+
+      - **If items fail (excluding [NEEDS CLARIFICATION])**:
+        1. List the failing items and specific issues
+        2. Update the spec to address each issue
+        3. Re-run validation until all items pass (max 3 iterations)
+        4. If still failing after 3 iterations, document remaining issues in checklist notes and warn user
+
+      - **If [NEEDS CLARIFICATION] markers remain**:
+        1. Extract all [NEEDS CLARIFICATION: ...] markers from the spec
+        2. **LIMIT CHECK**: If more than 3 markers exist, keep only the 3 most critical (by scope/security/UX impact) and make informed guesses for the rest
+        3. For each clarification needed (max 3), present options to user in this format:
+
+           ```markdown
+           ## Question [N]: [Topic]
+
+           **Context**: [Quote relevant spec section]
+
+           **What we need to know**: [Specific question from NEEDS CLARIFICATION marker]
+
+           **Suggested Answers**:
+
+           | Option | Answer | Implications |
+           |--------|--------|--------------|
+           | A      | [First suggested answer] | [What this means for the feature] |
+           | B      | [Second suggested answer] | [What this means for the feature] |
+           | C      | [Third suggested answer] | [What this means for the feature] |
+           | Custom | Provide your own answer | [Explain how to provide custom input] |
+
+           **Your choice**: _[Wait for user response]_
+           ```
+
+        4. **CRITICAL - Table Formatting**: Ensure markdown tables are properly formatted:
+           - Use consistent spacing with pipes aligned
+           - Each cell should have spaces around content: `| Content |` not `|Content|`
+           - Header separator must have at least 3 dashes: `|--------|`
+           - Test that the table renders correctly in markdown preview
+        5. Number questions sequentially (Q1, Q2, Q3 - max 3 total)
+        6. Present all questions together before waiting for responses
+        7. Wait for user to respond with their choices for all questions (e.g., "Q1: A, Q2: Custom - [details], Q3: B")
+        8. Update the spec by replacing each [NEEDS CLARIFICATION] marker with the user's selected or provided answer
+        9. Re-run validation after all clarifications are resolved
+
+   d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
+
+## Mandatory Post-Execution Hooks
+
+**You MUST complete this section before reporting completion to the user.**
+
+Check if `.specify/extensions.yml` exists in the project root.
+- If it does not exist, or no hooks are registered under `hooks.after_specify`, skip to the Completion Report.
+- If it exists, read it and look for entries under the `hooks.after_specify` key.
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue to the Completion Report.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
+    ```
+    ## Extension Hooks
+
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+## Completion Report
+
+Report completion to the user with:
+- `SPECIFY_FEATURE_DIRECTORY` — the feature directory path
+- `SPEC_FILE` — the spec file path
+- Checklist results summary
+- Readiness for the next phase (`/speckit-clarify` or `/speckit-plan`)
+
+**NOTE:** Branch creation is handled by the `before_specify` hook (git extension). Spec directory and file creation are always handled by this core command.
+
+## Quick Guidelines
+
+- Focus on **WHAT** users need and **WHY**.
+- Avoid HOW to implement (no tech stack, APIs, code structure).
+- Written for business stakeholders, not developers.
+- DO NOT create any checklists that are embedded in the spec. That will be a separate command.
+
+### Section Requirements
+
+- **Mandatory sections**: Must be completed for every feature
+- **Optional sections**: Include only when relevant to the feature
+- When a section doesn't apply, remove it entirely (don't leave as "N/A")
+
+### For AI Generation
+
+When creating this spec from a user prompt:
+
+1. **Make informed guesses**: Use context, industry standards, and common patterns to fill gaps
+2. **Document assumptions**: Record reasonable defaults in the Assumptions section
+3. **Limit clarifications**: Maximum 3 [NEEDS CLARIFICATION] markers - use only for critical decisions that:
+   - Significantly impact feature scope or user experience
+   - Have multiple reasonable interpretations with different implications
+   - Lack any reasonable default
+4. **Prioritize clarifications**: scope > security/privacy > user experience > technical details
+5. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
+6. **Common areas needing clarification** (only if no reasonable default exists):
+   - Feature scope and boundaries (include/exclude specific use cases)
+   - User types and permissions (if multiple conflicting interpretations possible)
+   - Security/compliance requirements (when legally/financially significant)
+
+**Examples of reasonable defaults** (don't ask about these):
+
+- Data retention: Industry-standard practices for the domain
+- Performance targets: Standard web/mobile app expectations unless specified
+- Error handling: User-friendly messages with appropriate fallbacks
+- Authentication method: Standard session-based or OAuth2 for web apps
+- Integration patterns: Use project-appropriate patterns (REST/GraphQL for web services, function calls for libraries, CLI args for tools, etc.)
+
+### Success Criteria Guidelines
+
+Success criteria must be:
+
+1. **Measurable**: Include specific metrics (time, percentage, count, rate)
+2. **Technology-agnostic**: No mention of frameworks, languages, databases, or tools
+3. **User-focused**: Describe outcomes from user/business perspective, not system internals
+4. **Verifiable**: Can be tested/validated without knowing implementation details
+
+**Good examples**:
+
+- "Users can complete checkout in under 3 minutes"
+- "System supports 10,000 concurrent users"
+- "95% of searches return results in under 1 second"
+- "Task completion rate improves by 40%"
+
+**Bad examples** (implementation-focused):
+
+- "API response time is under 200ms" (too technical, use "Users see results instantly")
+- "Database can handle 1000 TPS" (implementation detail, use user-facing metric)
+- "React components render efficiently" (framework-specific)
+- "Redis cache hit rate above 80%" (technology-specific)
+
+## Done When
+
+- [ ] Specification written to `SPEC_FILE` and validated against quality checklist
+- [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
+- [ ] Completion reported to user with feature directory, spec file path, and checklist results
+
+
+---
+
+_**Agent (claude-sonnet-5 2026-09-21 11:12:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check active feature and extensions
+
+`cat .specify/feature.json; ls .specify/extensions.yml 2>/dev/null || echo "no extensions.yml"`
+
+```text
+{
+  "feature_directory": "specs/001-ticket-management-ui"
+}
+no extensions.yml
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:12:09Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/spec.md`
+
+```text
+1	# Feature Specification: Support Ticket Management UI
+2	
+3	**Feature Branch**: `001-ticket-management-ui`
+4	
+5	**Created**: 2026-09-21
+6	
+7	**Status**: Draft
+8	
+9	**Input**: User description: "Use the requirement file @application-requirements.txt identify the front end requirements and create the specifications for this React project"
+10	
+11	## Clarifications
+12	
+13	### Session 2026-09-21
+14	
+15	- Q: What priority levels should tickets support? → A: LOW, MEDIUM, HIGH, CRITICAL
+16	- Q: How should agents pick a ticket's assignee — free-text entry or select from a fixed list of known users? → A: Select from a fixed list of known users (dropdown)
+17	- Q: Should keyword search also match ticket comments, or only title and description? → A: Title and description only
+18	- Q: Should the comment history show who wrote each comment? → A: No — this slice has no user identity/authentication, so comments have no author field; the backend's `Comment` shape is `id`, `ticketId`, `createdAt`, `content` only
+19	- Q: Should the backend return all of a ticket's comments in one response, or paginated? → A: Paginated — the UI MUST support loading additional pages of comments (FR-006a)
+20	
+21	## User Scenarios & Testing *(mandatory)*
+22	
+23	### User Story 1 - Create and List Tickets (Priority: P1)
+24	
+25	A support agent opens the application, creates a new ticket describing an
+26	issue, and immediately sees it appear in the ticket list alongside all other
+27	open work.
+28	
+29	**Why this priority**: Without the ability to create and see tickets, no
+30	other part of the system has anything to operate on. This is the smallest
+31	possible slice that delivers real value (a working ticket intake log).
+32	
+33	**Independent Test**: Can be fully tested by submitting the create-ticket
+34	form with valid data and confirming the new ticket appears in the ticket
+35	list with the data entered.
+36	
+37	**Acceptance Scenarios**:
+38	
+39	1. **Given** the ticket list is open, **When** the agent fills in title,
+40	   description, and priority and submits the create form, **Then** a new
+41	   ticket is created with status `OPEN` and appears in the ticket list.
+42	2. **Given** the create-ticket form, **When** the agent submits it with a
+43	   missing required field (e.g. no title), **Then** the system MUST prevent
+44	   submission and display a clear, field-specific error message.
+45	3. **Given** an existing set of tickets, **When** the agent opens the ticket
+46	   list, **Then** each ticket's title, status, priority, and assignee are
+47	   visible without opening the ticket.
+48	
+49	---
+50	
+51	### User Story 2 - View and Update Ticket Details (Priority: P1)
+52	
+53	A support agent opens a ticket from the list to see its full details, edits
+54	its title, description, priority, or assignee, and moves it through its
+55	lifecycle (for example from `OPEN` to `IN_PROGRESS`) as work progresses.
+56	
+57	**Why this priority**: Ticket triage is the core operational workflow — an
+58	agent must be able to update and progress a ticket, not just create and
+59	view it, for the tool to be usable day to day.
+60	
+61	**Independent Test**: Can be fully tested by opening an existing ticket,
+62	changing its priority/assignee, saving, and confirming the change persists
+63	and displays correctly; and by attempting a valid and an invalid status
+64	change and confirming the correct outcome for each.
+65	
+66	**Acceptance Scenarios**:
+67	
+68	1. **Given** an open ticket's detail view, **When** the agent edits the
+69	   title, description, priority, or assignee and saves, **Then** the
+70	   updated values are reflected immediately in the detail view and in the
+71	   ticket list.
+72	2. **Given** a ticket in status `OPEN`, **When** the agent changes its
+73	   status to `IN_PROGRESS`, **Then** the change is accepted and the new
+74	   status is displayed.
+75	3. **Given** a ticket in status `CLOSED`, **When** the agent attempts to
+76	   change its status back to `OPEN`, **Then** the system MUST reject the
+77	   change and display a clear message explaining the transition is not
+78	   allowed.
+79	4. **Given** a ticket update that fails backend validation (e.g. title
+80	   cleared to empty), **When** the agent attempts to save, **Then** the
+81	   system MUST display the validation error next to the relevant field and
+82	   MUST NOT discard the agent's unsaved edits.
+83	
+84	---
+85	
+86	### User Story 3 - Add Comments to a Ticket (Priority: P2)
+87	
+88	A support agent adds a comment to a ticket to record progress, findings, or
+89	communication history, and can see the full comment history when reviewing
+90	the ticket later.
+91	
+92	**Why this priority**: Comments capture the working history of a ticket;
+93	valuable but the ticket lifecycle (US1/US2) is usable without them.
+94	
+95	**Independent Test**: Can be fully tested by opening a ticket, submitting a
+96	comment, and confirming it appears in the ticket's comment history in order.
+97	
+98	**Acceptance Scenarios**:
+99	
+100	1. **Given** a ticket's detail view, **When** the agent submits a
+101	   non-empty comment, **Then** the comment appears in the ticket's comment
+102	   history with its timestamp.
+103	2. **Given** a ticket's detail view, **When** the agent attempts to submit
+104	   an empty comment, **Then** the system MUST prevent submission and
+105	   display a clear error.
+106	3. **Given** a ticket with more comments than fit on one page, **When**
+107	   the agent views the comment history, **Then** the system MUST let the
+108	   agent load additional pages of comments rather than requiring all
+109	   comments to load at once.
+110	
+111	---
+112	
+113	### User Story 4 - Search and Filter Tickets (Priority: P3)
+114	
+115	A support agent searches the ticket list by keyword and/or filters it by
+116	status to quickly find the tickets relevant to their current work.
+117	
+118	**Why this priority**: Useful for efficiency once a meaningful number of
+119	tickets exist, but the list remains usable at small scale without it.
+120	
+121	**Independent Test**: Can be fully tested by entering a keyword that
+122	matches a known ticket's title/description and confirming only matching
+123	tickets are shown; and by selecting a status filter and confirming only
+124	tickets in that status are shown.
+125	
+126	**Acceptance Scenarios**:
+127	
+128	1. **Given** a list of tickets, **When** the agent enters a keyword matching
+129	   one ticket's title or description, **Then** only matching tickets are
+130	   shown in the list.
+131	2. **Given** a list of tickets, **When** the agent selects a status filter
+132	   (e.g. `IN_PROGRESS`), **Then** only tickets currently in that status are
+133	   shown.
+134	3. **Given** a keyword search and a status filter are both active,
+135	   **When** the agent views the list, **Then** only tickets matching both
+136	   conditions are shown.
+137	4. **Given** a search keyword or status filter that matches no tickets,
+138	   **When** the agent views the list, **Then** the system displays a clear
+139	   "no results" state instead of an empty blank list.
+140	
+141	---
+142	
+143	### Edge Cases
+144	
+145	- What happens when the agent submits a ticket update or comment while
+146	  offline or the backend is unreachable? The system MUST show a clear
+147	  connection/error message and MUST NOT show the change as if it succeeded.
+148	- How does the system handle a status transition that was valid when the
+149	  form loaded but has since become invalid (e.g. another agent already
+150	  closed the ticket)? The system MUST surface the backend's rejection
+151	  rather than assuming success.
+152	- What happens when the ticket list is empty (no tickets created yet)? The
+153	  system MUST display a clear empty state distinct from a "no search
+154	  results" state.
+155	- What happens when a very long title, description, or comment is entered?
+156	  The system MUST surface any backend-enforced length validation error
+157	  clearly rather than failing silently.
+158	- What happens when a ticket has no comments yet? The system MUST display
+159	  a clear empty state rather than an empty blank area.
+160	- What happens when the agent has loaded several pages of a ticket's
+161	  comments and then adds a new comment? The system MUST ensure the new
+162	  comment is visible without requiring the agent to manually re-request
+163	  every previously loaded page.
+164	
+165	## Requirements *(mandatory)*
+166	
+167	### Functional Requirements
+168	
+169	- **FR-001**: The system MUST provide a form to create a ticket with title,
+170	  description, and priority; assignee MAY be set at creation or left
+171	  unassigned.
+172	- **FR-002**: The system MUST display a list of all tickets, each showing
+173	  at minimum title, status, priority, and assignee.
+174	- **FR-003**: The system MUST allow the user to open a ticket to view its
+175	  full details, including access to its comment history.
+176	- **FR-004**: The system MUST allow the user to update a ticket's title,
+177	  description, priority, and assignee from the ticket detail view.
+178	- **FR-005**: The system MUST allow the user to change a ticket's assignee,
+179	  independently of other field edits, by selecting from a fixed list of
+180	  known users (no free-text assignee entry).
+181	- **FR-006**: The system MUST allow the user to add a comment to a ticket
+182	  and MUST display its comment history in chronological order.
+183	- **FR-006a**: The system MUST retrieve a ticket's comments via a
+184	  paginated listing and MUST let the user load additional pages, rather
+185	  than requiring the backend to return every comment in one response.
+186	- **FR-007**: The system MUST allow the user to search tickets by keyword,
+187	  matching against ticket title and description only (not comments).
+188	- **FR-008**: The system MUST allow the user to filter the ticket list by
+189	  status.
+190	- **FR-009**: The system MUST allow search and status filter to be applied
+191	  together, narrowing results to tickets matching both.
+192	- **FR-010**: The system MUST offer status transitions consistent with the
+193	  ticket lifecycle (`OPEN → IN_PROGRESS → RESOLVED → CLOSED`, with
+194	  `CANCELLED` reachable from `OPEN` and `IN_PROGRESS`), and MUST submit
+195	  every transition attempt for backend validation rather than applying it
+196	  locally.
+197	- **FR-011**: The system MUST display the outcome of every status
+198	  transition attempt, including a clear, specific message when the backend
+199	  rejects the transition as invalid.
+200	- **FR-012**: The system MUST display field-specific, human-readable error
+201	  messages for any validation failure returned when creating or updating a
+202	  ticket or adding a comment.
+203	- **FR-013**: The system MUST preserve the user's in-progress edits on a
+204	  form when a save attempt fails, so the user does not have to re-enter
+205	  data.
+206	- **FR-014**: The system MUST reflect newly created tickets, ticket
+207	  updates, added comments, and status changes in the ticket list and
+208	  detail view without requiring a full page reload.
+209	- **FR-015**: The system MUST distinguish, in the UI, between "list is
+210	  empty" and "search/filter returned no matches" states.
+211	
+212	### Key Entities
+213	
+214	- **Ticket**: A unit of support work. Attributes: title, description,
+215	  priority (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), status, assignee, created
+216	  date, last-updated date. Status follows the fixed lifecycle described in
+217	  FR-010.
+218	- **Comment**: A timestamped note attached to a single ticket. Attributes:
+219	  comment ID, parent ticket ID, content, created date (no author — this
+220	  slice has no user identity/authentication). Comments are ordered
+221	  chronologically, are never edited or deleted once added, and are
+222	  retrieved from the backend as a paginated list rather than all at once.
+223	- **Assignee**: The person a ticket is currently assigned to. A ticket may
+224	  have no assignee.
+225	
+226	## Success Criteria *(mandatory)*
+227	
+228	### Measurable Outcomes
+229	
+230	- **SC-001**: A user can create a new ticket and see it appear in the
+231	  ticket list in under 30 seconds.
+232	- **SC-002**: A user can locate a specific known ticket, from a list of at
+233	  least 50 tickets, using search or filter, in under 15 seconds.
+234	- **SC-003**: 100% of invalid status transition attempts made through the
+235	  UI result in a visible rejection message, with no ticket left in an
+236	  incorrect status.
+237	- **SC-004**: 100% of validation errors returned for ticket creation,
+238	  ticket updates, or comments are shown to the user in plain language tied
+239	  to the relevant field, with zero raw error codes shown.
+240	- **SC-005**: 90% of first-time users can create a ticket and add a
+241	  comment to it without external help, on their first attempt.
+242	
+243	## Assumptions
+244	
+245	- This specification covers the frontend UI only; ticket persistence,
+246	  state-machine enforcement, and input validation are provided by an
+247	  existing/companion backend and are consumed, not re-implemented, by this
+248	  UI.
+249	- Single-role usage is assumed: any user of the UI can create, update,
+250	  comment on, and search/filter any ticket. Role-based permissions and
+251	  authentication/login are out of scope for this specification.
+252	- Assignee is selected from a known/available set of users (dropdown, not
+253	  free text); the source of that user list is provided by the backend and
+254	  is out of scope for this UI specification beyond "select an assignee from
+255	  the provided list."
+256	- Ticket list size is expected to be moderate (tens to low hundreds of
+257	  tickets); no specific pagination or infinite-scroll behavior is mandated
+258	  by this specification.
+259	- Comments have no author/identity field, consistent with this
+260	  specification's Assumption that authentication/login is out of scope;
+261	  the comment history distinguishes entries only by content and creation
+262	  time, not by who wrote them.
+263	- Comment listing is paginated by the backend; the exact page size is a
+264	  backend/UI implementation detail (a page size similar to the ticket
+265	  list's is a reasonable default) and is not mandated by this
+266	  specification beyond "additional pages MUST be loadable on request"
+267	  (FR-006a).
+268
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:12:40Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:12:42Z)**_
+
+Now rewrite User Story 2 to reflect the view/edit page split.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:12:53Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:12:55Z)**_
+
+Update US1 acceptance scenario 1 (create redirect) and US3 (comments live on the view page).
+
+_**Agent (claude-sonnet-5 2026-09-21 11:12:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:07Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:12Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:14Z)**_
+
+Now add relevant edge cases.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:18Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:26Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:27Z)**_
+
+Now re-validate the checklist.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:28Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/checklists/requirements.md`
+
+```text
+1	# Specification Quality Checklist: Support Ticket Management UI
+2	
+3	**Purpose**: Validate specification completeness and quality before proceeding to planning
+4	**Created**: 2026-09-21
+5	**Feature**: [spec.md](../spec.md)
+6	
+7	## Content Quality
+8	
+9	- [x] No implementation details (languages, frameworks, APIs)
+10	- [x] Focused on user value and business needs
+11	- [x] Written for non-technical stakeholders
+12	- [x] All mandatory sections completed
+13	
+14	## Requirement Completeness
+15	
+16	- [x] No [NEEDS CLARIFICATION] markers remain
+17	- [x] Requirements are testable and unambiguous
+18	- [x] Success criteria are measurable
+19	- [x] Success criteria are technology-agnostic (no implementation details)
+20	- [x] All acceptance scenarios are defined
+21	- [x] Edge cases are identified
+22	- [x] Scope is clearly bounded
+23	- [x] Dependencies and assumptions identified
+24	
+25	## Feature Readiness
+26	
+27	- [x] All functional requirements have clear acceptance criteria
+28	- [x] User scenarios cover primary flows
+29	- [x] Feature meets measurable outcomes defined in Success Criteria
+30	- [x] No implementation details leak into specification
+31	
+32	## Notes
+33	
+34	- All items pass. Clarification session complete. Spec ready for `/speckit-plan`.
+35
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:13:37Z)**_
+
+No `.specify/extensions.yml` — hooks skipped.
+
+Updated `specs/001-ticket-management-ui/spec.md` in place (amendment to existing feature, not a new one):
+
+- **Clarifications**: 3 new Q&A entries logging the view/edit page split, post-save redirect target, and breadcrumb requirement
+- **US1**: acceptance scenario 1 now says create redirects to the new ticket's detail page
+- **US2**: rewritten — read-only "View" detail page (comments + status transitions live here) is now distinct from a separate "Edit" page (fields only); 6 acceptance scenarios cover View→Edit→Save→back-to-View, plus valid/invalid transitions and edit-failure preserving the edit page
+- **US3**: comments now explicitly anchored to the read-only detail page
+- **Requirements**: FR-003/FR-004 reworded for the split; added **FR-016** (View action), **FR-017** (Edit action), **FR-018** (redirect after create), **FR-019** (redirect after edit save), **FR-020** (breadcrumbs on every page, ancestors navigable)
+- **Edge Cases**: added cancel-without-saving and direct-edit-URL-navigation cases
+- **Assumptions**: added — status transitions/comments belong to the View page not Edit; breadcrumb placeholder while ticket title is still loading
+
+Checklist re-validated: 16/16 still passing, no `[NEEDS CLARIFICATION]` markers, no implementation-detail leakage.
+
+**SPECIFY_FEATURE_DIRECTORY**: `specs/001-ticket-management-ui`
+**SPEC_FILE**: `specs/001-ticket-management-ui/spec.md`
+
+This is a real page-architecture change (one `TicketDetailPage` → separate View + Edit pages, plus breadcrumbs) — needs `/speckit-plan` to update plan.md/data-model/contracts, then `/speckit-tasks` before touching code.
+
+---
+
+_**User (2026-09-21 11:23:12Z)**_
+
+<command-message>speckit-plan</command-message>
+<command-name>/speckit-plan</command-name>
+
+---
+
+_**User (2026-09-21 11:23:12Z)**_
+
+Base directory for this skill: /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/.claude/skills/speckit-plan
+
+## User Input
+
+```text
+
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Pre-Execution Checks
+
+**Check for extension hooks (before planning)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_plan` key
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to the Outline.
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Outline
+
+1. **Setup**: Run `python3 .specify/scripts/python/setup_plan.py --json` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, FEATURE_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+2. **Load context**: Read FEATURE_SPEC and `.specify/memory/constitution.md`. Load IMPL_PLAN template (already copied).
+
+3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
+   - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
+   - Fill Constitution Check section from constitution
+   - Evaluate gates (ERROR if violations unjustified)
+   - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)
+   - Phase 1: Generate data-model.md, contracts/, quickstart.md
+   - Re-evaluate Constitution Check post-design
+
+## Mandatory Post-Execution Hooks
+
+**You MUST complete this section before reporting completion to the user.**
+
+Check if `.specify/extensions.yml` exists in the project root.
+- If it does not exist, or no hooks are registered under `hooks.after_plan`, skip to the Completion Report.
+- If it exists, read it and look for entries under the `hooks.after_plan` key.
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue to the Completion Report.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
+    ```
+    ## Extension Hooks
+
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+## Completion Report
+
+Command ends after Phase 1 design. Report branch, IMPL_PLAN path, and generated artifacts.
+
+## Phases
+
+### Phase 0: Outline & Research
+
+1. **Extract unknowns from Technical Context** above:
+   - For each NEEDS CLARIFICATION → research task
+   - For each dependency → best practices task
+   - For each integration → patterns task
+
+2. **Generate and dispatch research agents**:
+
+   ```text
+   For each unknown in Technical Context:
+     Task: "Research {unknown} for {feature context}"
+   For each technology choice:
+     Task: "Find best practices for {tech} in {domain}"
+   ```
+
+3. **Consolidate findings** in `research.md` using format:
+   - Decision: [what was chosen]
+   - Rationale: [why chosen]
+   - Alternatives considered: [what else evaluated]
+
+**Output**: research.md with all NEEDS CLARIFICATION resolved
+
+### Phase 1: Design & Contracts
+
+**Prerequisites:** `research.md` complete
+
+1. **Extract entities from feature spec** → `data-model.md`:
+   - Entity name, fields, relationships
+   - Validation rules from requirements
+   - State transitions if applicable
+
+2. **Define interface contracts** (if project has external interfaces) → `/contracts/`:
+   - Identify what interfaces the project exposes to users or other systems
+   - Document the contract format appropriate for the project type
+   - Examples: public APIs for libraries, command schemas for CLI tools, endpoints for web services, grammars for parsers, UI contracts for applications
+   - Skip if project is purely internal (build scripts, one-off tools, etc.)
+
+3. **Create quickstart validation guide** → `quickstart.md`:
+   - Document runnable validation scenarios that prove the feature works end-to-end
+   - Include prerequisites, setup commands, test/run commands, and expected outcomes
+   - Use links or references to contracts and data model details instead of duplicating them
+   - Do not include full implementation code, model/service/controller bodies, migrations, or complete test suites
+   - Keep this artifact as a validation/run guide; implementation details belong in `tasks.md` and the implementation phase
+
+**Output**: data-model.md, /contracts/*, quickstart.md
+
+## Key rules
+
+- Use absolute paths for filesystem operations; use project-relative paths for references in documentation
+- ERROR on gate failures or unresolved clarifications
+
+## Done When
+
+- [ ] Plan workflow executed and design artifacts generated
+- [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
+- [ ] Completion reported to user with branch, plan path, and generated artifacts
+
+
+---
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Setup plan paths (existing plan.md preserved)
+
+`python3 .specify/scripts/python/setup_plan.py --json`
+
+```text
+Plan already exists at /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/plan.md, skipping template copy
+{"FEATURE_SPEC":"/home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/spec.md","IMPL_PLAN":"/home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/plan.md","FEATURE_DIR":"/home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui","BRANCH":"001-ticket-management-ui"}
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:34Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/plan.md`
+
+````text
+1	# Implementation Plan: Support Ticket Management UI
+2	
+3	**Branch**: `001-ticket-management-ui` | **Date**: 2026-09-21 | **Spec**: [spec.md](./spec.md)
+4	
+5	**Input**: Feature specification from `/specs/001-ticket-management-ui/spec.md`
+6	
+7	## Summary
+8	
+9	A single-page React + TypeScript application that lets support agents
+10	create, list, view, update, comment on, search, and filter tickets, and
+11	drive tickets through their status lifecycle — with the existing backend
+12	(documented in `backend-api-doc.json`, OpenAPI 3.1) as the sole source of
+13	truth for persistence, field validation, and status-transition legality.
+14	The frontend consumes seven existing endpoints (list, create, get-by-id,
+15	update, transition, list-comments (paginated), add-comment) through one
+16	typed API client, using
+17	Material UI for the mandated Material Design theme, TanStack Query for
+18	data fetching/caching/error state, and React Router for list/detail/create
+19	navigation.
+20	
+21	## Technical Context
+22	
+23	**Language/Version**: TypeScript 5.6 (strict mode), React 18.3
+24	
+25	**Primary Dependencies**: React 18, React DOM, MUI (`@mui/material`,
+26	`@mui/icons-material`) for the mandated Material Design UI, React Router
+27	v6 for routing, TanStack Query v5 for server-state fetching/caching, native
+28	`fetch` (no axios) wrapped in a small typed client for HTTP calls
+29	
+30	**Storage**: N/A — this repository is frontend-only; all ticket/comment
+31	persistence lives behind the existing backend API described in
+32	`backend-api-doc.json` (base `http://localhost:8080`, paths under
+33	`/api/v1`)
+34	
+35	**Testing**: Vitest + React Testing Library for component/hook tests, MSW
+36	(Mock Service Worker) to mock the documented backend contract for
+37	success/error-path integration tests without a live backend
+38	
+39	**Target Platform**: Evergreen desktop web browsers (Chrome/Edge/Firefox/
+40	Safari, latest 2 versions), served as a static SPA build (Vite)
+41	
+42	**Project Type**: Web frontend — single project (this repo contains no
+43	backend code; the backend is an existing external service)
+44	
+45	**Performance Goals**: Ticket list (up to ~200 tickets/page) renders within
+46	1s on a typical broadband connection; UI feedback (button/state change) for
+47	user-initiated actions within 100ms of the interaction, independent of
+48	network latency
+49	
+50	**Constraints**: Must consume the backend exactly as documented in
+51	`backend-api-doc.json` — status changes only via
+52	`POST /api/v1/tickets/{id}/transitions` (the `PATCH` update endpoint never
+53	accepts `status`); both the ticket list and a ticket's comment list are
+54	paginated by the backend (`page`/`size` query params, default size 20);
+55	`TicketDetailResponse` still embeds a `comments` array, but the comment
+56	list shown in the UI is sourced from the dedicated, paginated
+57	`GET /api/v1/tickets/{id}/comments` endpoint, not that embedded array;
+58	every write MUST surface the backend's `ApiError` (`fieldErrors`,
+59	`message`) rather than assuming success; comments have no author field —
+60	this slice has no user identity/authentication
+61	
+62	**Scale/Scope**: 7 backend endpoints, 4 user stories (create+list,
+63	view+update+transition, comment, search+filter), single user role, no
+64	authentication in this slice
+65	
+66	## Constitution Check
+67	
+68	*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+69	
+70	| Principle | Check | Result |
+71	|---|---|---|
+72	| I. Functional Components Only | All views/components planned as functional components with hooks (`useState`/`useReducer`/`useEffect`, custom hooks for data access) | PASS |
+73	| II. TypeScript Strict Typing | `tsconfig.json` strict mode; domain types (`Ticket`, `Comment`, `Priority`, `Status`, `ApiError`) defined once in `src/types/`, mirrored 1:1 from `backend-api-doc.json` schemas | PASS |
+74	| III. Backend-Driven State Machine Trust (NON-NEGOTIABLE) | UI only *offers* transitions consistent with the state machine as a usability aid; every transition is a `POST .../transitions` call; `409` rejections are surfaced verbatim, never swallowed or retried silently | PASS |
+75	| IV. Meaningful Error Feedback | TanStack Query's per-request loading/error/success state drives distinct list/detail loading, empty, and error UI; `ApiError.fieldErrors` mapped to per-field `FormHelperText` in forms | PASS |
+76	| V. Typed API Contract Layer | Single `src/api/` module (`http.ts` + per-resource functions) is the only place `fetch` is called; every function's request/response types match `src/types/` | PASS |
+77	| VI. No Secrets in Client Code | Backend base URL read from `VITE_API_BASE_URL` env var; `.env*.local` git-ignored; no credentials needed for this slice (no auth) | PASS |
+78	| Stack: Material Design mandated | MUI selected as the Material Design implementation | PASS |
+79	| Stack: Accessibility | MUI form controls carry labels by default; custom interactive elements (status-transition buttons) get explicit `aria-label`s | PASS |
+80	| Dev Workflow: new-dependency justification | See `research.md` Decisions — each added dependency (MUI, React Router, TanStack Query, MSW, Vite) is justified against the constitution's "no unjustified dependency" gate | PASS |
+81	
+82	No violations requiring the Complexity Tracking table.
+83	
+84	## Project Structure
+85	
+86	### Documentation (this feature)
+87	
+88	```text
+89	specs/001-ticket-management-ui/
+90	├── plan.md              # This file (/speckit-plan command output)
+91	├── research.md          # Phase 0 output (/speckit-plan command)
+92	├── data-model.md        # Phase 1 output (/speckit-plan command)
+93	├── quickstart.md        # Phase 1 output (/speckit-plan command)
+94	├── contracts/           # Phase 1 output (/speckit-plan command)
+95	└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
+96	```
+97	
+98	### Source Code (repository root)
+99	
+100	```text
+101	src/
+102	├── api/                  # Typed API client — the only layer that calls fetch()
+103	│   ├── http.ts           # fetch wrapper: base URL, JSON handling, ApiError parsing
+104	│   ├── ticketsApi.ts     # list/create/getById/update/transition
+105	│   └── commentsApi.ts    # list (paginated)/addComment
+106	├── types/                # Domain types mirrored from backend-api-doc.json
+107	│   ├── ticket.ts          # Ticket, Priority, Status, TicketPage, TicketDetail
+108	│   ├── comment.ts         # Comment, CommentPage
+109	│   └── apiError.ts        # ApiError, ApiFieldError
+110	├── hooks/                 # TanStack Query hooks wrapping api/
+111	│   ├── useTickets.ts       # list + search/filter/pagination params
+112	│   ├── useTicket.ts        # get-by-id (ticket fields only)
+113	│   ├── useComments.ts      # paginated comment list for a ticket
+114	│   ├── useCreateTicket.ts
+115	│   ├── useUpdateTicket.ts
+116	│   ├── useTransitionTicket.ts
+117	│   └── useAddComment.ts
+118	├── components/             # Presentational + form components
+119	│   ├── TicketList/
+120	│   ├── TicketForm/          # shared by create + edit
+121	│   ├── StatusBadge/
+122	│   ├── PriorityBadge/
+123	│   ├── StatusTransitionMenu/ # offers only valid next-statuses
+124	│   ├── CommentList/
+125	│   └── CommentForm/
+126	├── pages/                   # Route-level containers
+127	│   ├── TicketListPage.tsx
+128	│   ├── TicketCreatePage.tsx
+129	│   └── TicketDetailPage.tsx
+130	├── routes/
+131	│   └── router.tsx
+132	├── theme/
+133	│   └── muiTheme.ts
+134	├── config/
+135	│   ├── env.ts               # reads VITE_API_BASE_URL
+136	│   └── assignees.ts         # static known-users list (see research.md)
+137	├── App.tsx
+138	└── main.tsx
+139	
+140	tests/
+141	├── unit/                    # component/hook unit tests
+142	├── integration/              # page-level flows against MSW-mocked API
+143	│   ├── create-ticket.test.tsx
+144	│   ├── update-ticket.test.tsx
+145	│   ├── invalid-transition.test.tsx
+146	│   ├── add-comment.test.tsx
+147	│   └── search-filter.test.tsx
+148	└── msw/
+149	    ├── handlers.ts            # mocked handlers mirroring backend-api-doc.json
+150	    └── server.ts
+151	```
+152	
+153	**Structure Decision**: Single frontend project at the repository root
+154	(this repo has no backend code — the backend is an existing external
+155	service consumed via the documented API). No `frontend/`/`backend/` split
+156	is used since there is nothing else in this repository to split from.
+157	
+158	## Complexity Tracking
+159	
+160	*No constitution violations identified — table intentionally left empty.*
+161
+````
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:35Z)**_
+
+Now update plan.md: Summary, Technical Context, Project Structure.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:41Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/plan.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:46Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/plan.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:50Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/plan.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:51Z)**_
+
+Now update Project Structure listings.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:23:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/plan.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:00Z)**_
+
+Now Phase 0: research.md decision entry.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:01Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/research.md`
+
+```text
+150	**Alternatives considered**: Continue reading `TicketDetailResponse.comments`
+151	and paginate client-side over the full array (rejected — the backend
+152	doesn't return that array paginated, so "all comments" would still be
+153	fetched in one response, and the array would silently drift out of sync
+154	with the dedicated endpoint's page-1 result); ignore the new endpoint and
+155	drop FR-006a (rejected by the user when this was raised as a decision
+156	point — the backend now supports real pagination, so the frontend should
+157	use it).
+158	
+159	## Decision: Status-transition UX
+160	
+161	**Decision**: A `StatusTransitionMenu` component computes the set of
+162	*valid next statuses* for the ticket's current status from a local
+163	constant map mirroring FR-010 (`OPEN → IN_PROGRESS, CANCELLED`;
+164	`IN_PROGRESS → RESOLVED, CANCELLED`; `RESOLVED → CLOSED`; `CLOSED → []`;
+165	`CANCELLED → []`), and only offers those as selectable actions. Every
+166	selection still calls `POST /api/v1/tickets/{id}/transitions`; a `409`
+167	response is displayed verbatim and does not change the displayed status.
+168	
+169	**Rationale**: Principle III explicitly permits the UI to *restrict what
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:04Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/research.md`
+
+```text
+168	
+169	**Rationale**: Principle III explicitly permits the UI to *restrict what
+170	it offers* as a usability aid while still treating the backend as the sole
+171	authority — this menu is a convenience, not a second implementation of the
+172	state machine; the backend's response is always what determines the
+173	ticket's actual status.
+174
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:17Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/research.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:22Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/contracts/README.md`
+
+```text
+1	# Contracts: Support Ticket Management UI
+2	
+3	This feature does not expose an API of its own — it is a frontend that
+4	**consumes** an existing backend. Its interface contract is therefore the
+5	subset of the backend's OpenAPI document it depends on.
+6	
+7	**Source of truth**: `backend-api-doc.json` (repository root, OpenAPI
+8	3.1). Do not duplicate its schemas here; `src/types/` is the frontend's
+9	typed mirror of the schemas listed below, and `src/api/` is the only code
+10	allowed to call these endpoints (Constitution Principle V).
+11	
+12	## Endpoints consumed
+13	
+14	| Method | Path | Used by | Request schema | Response schema(s) |
+15	|---|---|---|---|---|
+16	| `GET` | `/api/v1/tickets` | US1 (list), US4 (search/filter) | query: `q?`, `status?`, `page?`, `size?` | `200 TicketPage` |
+17	| `POST` | `/api/v1/tickets` | US1 (create) | `TicketCreateRequest` | `201 TicketResponse` \| `400 ApiError` |
+18	| `GET` | `/api/v1/tickets/{ticketId}` | US2 (view detail) | path: `ticketId` | `200 TicketDetailResponse` \| `404 ApiError` |
+19	| `PATCH` | `/api/v1/tickets/{ticketId}` | US2 (update fields) | path: `ticketId`, body: `TicketUpdateRequest` | `200 TicketResponse` \| `400/404/409 ApiError` |
+20	| `POST` | `/api/v1/tickets/{ticketId}/transitions` | US2 (status change) | path: `ticketId`, body: `TicketTransitionRequest` | `200 TicketResponse` \| `404/409 ApiError` |
+21	| `GET` | `/api/v1/tickets/{ticketId}/comments` | US3 (view comment history, paginated per FR-006a) | path: `ticketId`, query: `page?`, `size?` | `200 CommentPage` \| `404 ApiError` |
+22	| `POST` | `/api/v1/tickets/{ticketId}/comments` | US3 (add comment) | path: `ticketId`, body: `CommentCreateRequest` | `201 CommentResponse` \| `400/404 ApiError` |
+23	
+24	## Frontend-side contract notes
+25	
+26	- `PATCH .../{ticketId}` MUST NOT ever send a `status` field — it is not
+27	  part of `TicketUpdateRequest` and status changes only happen through the
+28	  transitions endpoint (per `backend-api-doc.json`'s own description of
+29	  `update`).
+30	- Every `409` from the transitions or update endpoints is a rejection the
+31	  UI must display, not retry automatically or hide.
+32	- `GET /api/v1/tickets` combines `q` (keyword, matched by the backend
+33	  against title/description per the Clarifications decision) and `status`
+34	  as independent, combinable query params — the UI always sends whichever
+35	  of the two are currently active together.
+36	- `GET /api/v1/tickets/{ticketId}/comments` is the sole source for the
+37	  comment list the UI renders; the `comments` array embedded in
+38	  `TicketDetailResponse` is not read by the UI (see data-model.md
+39	  Relationships) since it duplicates this endpoint without pagination.
+40	- `CommentResponse` has no author field — comments are shown by content
+41	  and timestamp only.
+42	
+43	## Mock contract for tests
+44	
+45	`tests/msw/handlers.ts` implements MSW handlers for all seven rows above,
+46	mirroring each schema's required fields and the documented error status
+47	codes (`400`, `404`, `409`), so integration tests can exercise both
+48	accept and reject paths without a live backend.
+49
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:27Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/contracts/README.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:31Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check for stale view/edit references in data-model and quickstart
+
+`grep -n "detail view\|TicketDetailPage\|edit mode\|update endpoint" specs/001-ticket-management-ui/data-model.md specs/001-ticket-management-ui/quickstart.md`
+
+```text
+specs/001-ticket-management-ui/quickstart.md:51:3. **Add comment (US3)** — On the ticket detail view, submit a comment.
+specs/001-ticket-management-ui/data-model.md:19:| `status` | `Status` enum | `OPEN` \| `IN_PROGRESS` \| `RESOLVED` \| `CLOSED` \| `CANCELLED`; changed only via the transition endpoint, never via the update endpoint |
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:32Z)**_
+
+data-model.md fine as-is. Now update quickstart.md manual scenarios for US2/US3 to reflect the new page split.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:34Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/quickstart.md`
+
+````text
+1	# Quickstart: Support Ticket Management UI
+2	
+3	Validates the feature end-to-end against the acceptance scenarios in
+4	[spec.md](./spec.md). See [data-model.md](./data-model.md) for field
+5	shapes and [contracts/README.md](./contracts/README.md) for the endpoints
+6	each step exercises.
+7	
+8	## Prerequisites
+9	
+10	- Node.js 20 LTS, npm.
+11	- Either:
+12	  - A running instance of the backend described in `backend-api-doc.json`
+13	    at `http://localhost:8080` (real end-to-end run), **or**
+14	  - No backend running (the app's test suite uses MSW-mocked responses —
+15	    see `tests/msw/`).
+16	- `VITE_API_BASE_URL` set in `.env.local` (git-ignored) to the backend's
+17	  base URL, e.g. `http://localhost:8080`.
+18	
+19	## Setup
+20	
+21	```bash
+22	npm install
+23	npm run dev        # starts the SPA against VITE_API_BASE_URL
+24	```
+25	
+26	## Automated validation
+27	
+28	```bash
+29	npm run test        # Vitest + React Testing Library + MSW, unit + integration
+30	npm run typecheck    # tsc --noEmit, strict mode
+31	```
+32	
+33	Expected: all tests pass, including at least one success-path and one
+34	backend-rejection-path test per US1–US4 (per the constitution's
+35	Development Workflow gate).
+36	
+37	## Manual validation scenarios
+38	
+39	1. **Create and list (US1)** — Open the app, click "New Ticket", fill in
+40	   title/description/priority, submit. Expect: redirected to the ticket
+41	   list (or detail), new ticket visible with status `OPEN`. Submit again
+42	   with title left empty: expect a field-level error, no request sent to
+43	   the backend that would otherwise reject it.
+44	2. **View and update (US2)** — Open the created ticket, edit its priority
+45	   and assignee (from the dropdown), save. Expect: updated values shown
+46	   immediately. Attempt an invalid status change no menu currently offers
+47	   by re-selecting an already-terminal ticket's status control if
+48	   available; otherwise verify via a `CLOSED` ticket that no forward
+49	   transition is offered, and that any attempt still round-trips through
+50	   the backend rather than changing the badge optimistically.
+51	3. **Add comment (US3)** — On the ticket detail view, submit a comment.
+52	   Expect: comment appears at the bottom of the comment history with its
+53	   timestamp (no author shown — this slice has no user identity). Submit
+54	   an empty comment: expect a validation error, no new comment added. On
+55	   a ticket seeded with more comments than one page (backend default page
+56	   size 20), expect a way to load additional pages rather than the whole
+57	   history loading at once (FR-006a).
+58	4. **Search and filter (US4)** — On the ticket list, enter a keyword
+59	   matching one ticket's title; expect only that ticket shown. Clear it,
+60	   select a status filter; expect only tickets in that status shown.
+61	   Combine both; expect the intersection. Search for a keyword matching
+62	   nothing; expect a "no results" state distinct from the empty-list state
+63	   shown before any ticket exists.
+64	
+65	## Success criteria mapping
+66	
+67	- SC-001 → Manual scenario 1 (create-to-visible-in-list time).
+68	- SC-002 → Manual scenario 4 (find a known ticket via search/filter).
+69	- SC-003 → Automated invalid-transition integration test
+70	  (`tests/integration/invalid-transition.test.tsx`).
+71	- SC-004 → Automated validation-error integration tests across
+72	  create/update/comment.
+73	- SC-005 → Manual scenarios 1 + 3 run by a first-time reviewer.
+74
+````
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:43Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/quickstart.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:24:50Z)**_
+
+No `.specify/extensions.yml` — hooks skipped.
+
+**Plan updated (in place)** for the View/Edit page split, post-save redirects, and breadcrumbs.
+
+- **plan.md**: Summary + Technical Context updated (two routes replace one: `/tickets/:id` read-only, `/tickets/:id/edit` editable); Constitution Check accessibility row notes MUI `Breadcrumbs`' built-in `aria-label`/`nav` landmark; Project Structure adds `Breadcrumbs/` component and `TicketEditPage.tsx`
+- **research.md**: new Decision — "View/edit page split, post-save redirect, and breadcrumbs": two routes, one generic `Breadcrumbs` component reusing each page's already-fetched `useTicket` data for labels (no extra request), no explicit Cancel button needed since nothing persists until Save
+- **contracts/README.md**: new "Client-side route contract" table (the 4 app routes), explicit note that `/tickets/:id/edit` must work on direct navigation
+- **quickstart.md**: US2 manual scenario rewritten for View→Edit→Save→back-to-View flow with breadcrumb checks; US3 anchored to the read-only page
+
+Constitution Check: still all PASS, no new violations, no new dependency (MUI already in use for `Breadcrumbs`).
+
+**Branch**: `001-ticket-management-ui`
+**IMPL_PLAN**: `specs/001-ticket-management-ui/plan.md`
+
+Next: `/speckit-tasks` to fold this into tasks.md (new `TicketEditPage`, `Breadcrumbs` component, router change, `TicketDetailPage` simplification to read-only), then implement.
+
+---
+
+_**User (2026-09-21 11:41:02Z)**_
+
+<command-message>speckit-tasks</command-message>
+<command-name>/speckit-tasks</command-name>
+
+---
+
+_**User (2026-09-21 11:41:02Z)**_
+
+Base directory for this skill: /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/.claude/skills/speckit-tasks
+
+## User Input
+
+```text
+
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Pre-Execution Checks
+
+**Check for extension hooks (before tasks generation)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_tasks` key
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to the Outline.
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Outline
+
+1. **Setup**: Run `python3 .specify/scripts/python/setup_tasks.py --json` from repo root and parse FEATURE_DIR, TASKS_TEMPLATE_CONTENT, TASKS_TEMPLATE, and AVAILABLE_DOCS list. `FEATURE_DIR` and `TASKS_TEMPLATE` must be absolute paths when provided. `AVAILABLE_DOCS` is a list of document names/relative paths available under `FEATURE_DIR` (for example `research.md` or `contracts/`). For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+2. **Load design documents**: Read from FEATURE_DIR:
+   - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
+   - **Optional**: data-model.md (entities), contracts/ (interface contracts), research.md (decisions), quickstart.md (test scenarios)
+   - **IF EXISTS**: Load `.specify/memory/constitution.md` for project principles and governance constraints
+   - Note: Not all projects have all documents. Generate tasks based on what's available.
+
+3. **Execute task generation workflow**:
+   - Load plan.md and extract tech stack, libraries, project structure
+   - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
+   - If data-model.md exists: Extract entities and map to user stories
+   - If contracts/ exists: Map interface contracts to user stories
+   - If research.md exists: Extract decisions for setup tasks
+   - Generate tasks organized by user story (see Task Generation Rules below)
+   - Generate dependency graph showing user story completion order
+   - Create parallel execution examples per user story
+   - Validate task completeness (each user story has all needed tasks, independently testable)
+
+4. **Generate tasks.md**: Use TASKS_TEMPLATE_CONTENT (from the JSON output above) as the structure. For compatibility with older setup scripts that omit TASKS_TEMPLATE_CONTENT, read TASKS_TEMPLATE instead. Fill with:
+   - Correct feature name from plan.md
+   - Phase 1: Setup tasks (project initialization)
+   - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
+   - Phase 3+: One phase per user story (in priority order from spec.md)
+   - Each phase includes: story goal, independent test criteria, tests (if requested), implementation tasks
+   - Final Phase: Polish & cross-cutting concerns
+   - All tasks must follow the strict checklist format (see Task Generation Rules below)
+   - Clear file paths for each task
+   - Dependencies section showing story completion order
+   - Parallel execution examples per story
+   - Implementation strategy section (MVP first, incremental delivery)
+
+## Mandatory Post-Execution Hooks
+
+**You MUST complete this section before reporting completion to the user.**
+
+Check if `.specify/extensions.yml` exists in the project root.
+- If it does not exist, or no hooks are registered under `hooks.after_tasks`, skip to the Completion Report.
+- If it exists, read it and look for entries under the `hooks.after_tasks` key.
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue to the Completion Report.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
+    ```
+    ## Extension Hooks
+
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+## Completion Report
+
+Output path to generated tasks.md and summary:
+- Total task count
+- Task count per user story
+- Parallel opportunities identified
+- Independent test criteria for each story
+- Suggested MVP scope (typically just User Story 1)
+- Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+
+Context for task generation: 
+
+The tasks.md should be immediately executable - each task must be specific enough that an LLM can complete it without additional context.
+
+## Task Generation Rules
+
+**CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
+
+**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+
+### Checklist Format (REQUIRED)
+
+Every task MUST strictly follow this format:
+
+```text
+- [ ] [TaskID] [P?] [Story?] Description with file path
+```
+
+**Format Components**:
+
+1. **Checkbox**: ALWAYS start with `- [ ]` (markdown checkbox)
+2. **Task ID**: Sequential number (T001, T002, T003...) in execution order
+3. **[P] marker**: Include ONLY if task is parallelizable (different files, no dependencies on incomplete tasks)
+4. **[Story] label**: REQUIRED for user story phase tasks only
+   - Format: [US1], [US2], [US3], etc. (maps to user stories from spec.md)
+   - Setup phase: NO story label
+   - Foundational phase: NO story label
+   - User Story phases: MUST have story label
+   - Polish phase: NO story label
+5. **Description**: Clear action with exact file path
+
+**Examples**:
+
+- ✅ CORRECT: `- [ ] T001 Create project structure per implementation plan`
+- ✅ CORRECT: `- [ ] T005 [P] Implement authentication middleware in src/middleware/auth.py`
+- ✅ CORRECT: `- [ ] T012 [P] [US1] Create User model in src/models/user.py`
+- ✅ CORRECT: `- [ ] T014 [US1] Implement UserService in src/services/user_service.py`
+- ❌ WRONG: `- [ ] Create User model` (missing ID and Story label)
+- ❌ WRONG: `T001 [US1] Create model` (missing checkbox)
+- ❌ WRONG: `- [ ] [US1] Create User model` (missing Task ID)
+- ❌ WRONG: `- [ ] T001 [US1] Create model` (missing file path)
+
+### Task Organization
+
+1. **From User Stories (spec.md)** - PRIMARY ORGANIZATION:
+   - Each user story (P1, P2, P3...) gets its own phase
+   - Map all related components to their story:
+     - Models needed for that story
+     - Services needed for that story
+     - Interfaces/UI needed for that story
+     - If tests requested: Tests specific to that story
+   - Mark story dependencies (most stories should be independent)
+
+2. **From Contracts**:
+   - Map each interface contract → to the user story it serves
+   - If tests requested: Each interface contract → contract test task [P] before implementation in that story's phase
+
+3. **From Data Model**:
+   - Map each entity to the user story(ies) that need it
+   - If entity serves multiple stories: Put in earliest story or Setup phase
+   - Relationships → service layer tasks in appropriate story phase
+   - For each field with constraints in data-model.md (max length, nullable/required, enum values, validation rules), quote the constraint verbatim in the task description so it is not left to implementation-time discretion
+
+4. **From Setup/Infrastructure**:
+   - Shared infrastructure → Setup phase (Phase 1)
+   - Foundational/blocking tasks → Foundational phase (Phase 2)
+   - Story-specific setup → within that story's phase
+
+### Phase Structure
+
+- **Phase 1**: Setup (project initialization)
+- **Phase 2**: Foundational (blocking prerequisites - MUST complete before user stories)
+- **Phase 3+**: User Stories in priority order (P1, P2, P3...)
+  - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
+  - Each phase should be a complete, independently testable increment
+- **Final Phase**: Polish & Cross-Cutting Concerns
+
+## Done When
+
+- [ ] tasks.md generated with all phases, task IDs, and file paths
+- [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
+- [ ] Completion reported to user with task count, story breakdown, and MVP scope
+
+
+---
+
+_**Agent (claude-sonnet-5 2026-09-21 11:41:14Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/components/TicketList/TicketList.tsx`
+
+```text
+1	import Table from "@mui/material/Table";
+2	import TableBody from "@mui/material/TableBody";
+3	import TableCell from "@mui/material/TableCell";
+4	import TableHead from "@mui/material/TableHead";
+5	import TableRow from "@mui/material/TableRow";
+6	import Typography from "@mui/material/Typography";
+7	import { StatusBadge } from "../StatusBadge/StatusBadge";
+8	import { PriorityBadge } from "../PriorityBadge/PriorityBadge";
+9	import type { Ticket } from "../../types/ticket";
+10	
+11	export interface TicketListProps {
+12	  tickets: Ticket[];
+13	  /** True when the list is empty because none have matched the active search/filter (FR-015). */
+14	  isFilteredEmpty?: boolean;
+15	}
+16	
+17	export function TicketList({
+18	  tickets,
+19	  isFilteredEmpty = false,
+20	}: TicketListProps) {
+21	  if (tickets.length === 0) {
+22	    return (
+23	      <Typography color="text.secondary" role="status">
+24	        {isFilteredEmpty
+25	          ? "No tickets match your search/filter."
+26	          : "No tickets yet. Create one to get started."}
+27	      </Typography>
+28	    );
+29	  }
+30	
+31	  return (
+32	    <Table aria-label="Ticket list">
+33	      <TableHead>
+34	        <TableRow>
+35	          <TableCell>Title</TableCell>
+36	          <TableCell>Status</TableCell>
+37	          <TableCell>Priority</TableCell>
+38	          <TableCell>Assignee</TableCell>
+39	        </TableRow>
+40	      </TableHead>
+41	      <TableBody>
+42	        {tickets.map((ticket) => (
+43	          <TableRow key={ticket.id}>
+44	            <TableCell>{ticket.title}</TableCell>
+45	            <TableCell>
+46	              <StatusBadge status={ticket.status} />
+47	            </TableCell>
+48	            <TableCell>
+49	              <PriorityBadge priority={ticket.priority} />
+50	            </TableCell>
+51	            <TableCell>{ticket.assignee ?? "Unassigned"}</TableCell>
+52	          </TableRow>
+53	        ))}
+54	      </TableBody>
+55	    </Table>
+56	  );
+57	}
+58
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:41:17Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read TicketList component and setup tasks paths
+
+`python3 .specify/scripts/python/setup_tasks.py --json 2>&1 | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['FEATURE_DIR']); print(d['AVAILABLE_DOCS'])"`
+
+```text
+/home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui
+['research.md', 'data-model.md', 'contracts/', 'quickstart.md']
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:41:58Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/tasks.md`
+
+````text
+1	---
+2	
+3	description: "Task list template for feature implementation"
+4	---
+5	
+6	# Tasks: Support Ticket Management UI
+7	
+8	**Input**: Design documents from `/specs/001-ticket-management-ui/`
+9	
+10	**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/README.md, quickstart.md
+11	
+12	**Tests**: Included — the constitution's Development Workflow gate requires
+13	every change touching create/update/comment/search/filter flows to include
+14	a success-path and a rejected/error-path test.
+15	
+16	**Organization**: Tasks are grouped by user story to enable independent
+17	implementation and testing of each story.
+18	
+19	## Format: `[ID] [P?] [Story] Description`
+20	
+21	- **[P]**: Can run in parallel (different files, no dependencies)
+22	- **[Story]**: Which user story this task belongs to (US1–US4)
+23	- Include exact file paths in descriptions
+24	
+25	## Path Conventions
+26	
+27	Single frontend project at the repository root (no backend code in this
+28	repo): `src/`, `tests/` — per plan.md's Project Structure.
+29	
+30	---
+31	
+32	## Phase 1: Setup (Shared Infrastructure)
+33	
+34	**Purpose**: Project initialization and basic structure
+35	
+36	- [X] T001 Create Vite + React + TypeScript project scaffold at repository root per plan.md Project Structure (`package.json`, `vite.config.ts`, `tsconfig.json` with `"strict": true`)
+37	- [X] T002 [P] Install and configure runtime dependencies: `react-router-dom`, `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled`, `@tanstack/react-query`
+38	- [X] T003 [P] Install and configure dev/test dependencies: `vitest`, `@testing-library/react`, `@testing-library/user-event`, `msw`
+39	- [X] T004 [P] Configure ESLint + Prettier for TypeScript strict mode with a rule forbidding `any` (Constitution Principle II)
+40	- [X] T005 [P] Create env config in `src/config/env.ts` reading `VITE_API_BASE_URL`; add `.env.example` (placeholders only — named to match the existing `.gitignore`'s `!.env.example` exception rather than `.env.local.example`) and confirm `.env*.local` is git-ignored (Constitution Principle VI)
+41	
+42	---
+43	
+44	## Phase 2: Foundational (Blocking Prerequisites)
+45	
+46	**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+47	
+48	**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+49	
+50	- [X] T006 [P] Define `src/types/ticket.ts`: `Ticket` (`id: string` UUID, `title: string` — backend allows 0–200 chars but UI additionally requires non-empty, `description: string`, `priority: Priority`, `status: Status`, `assignee?: string`, `createdAt: string`, `updatedAt: string`), `Priority` = `"LOW" | "MEDIUM" | "HIGH" | "CRITICAL"`, `Status` = `"OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED" | "CANCELLED"`, `TicketPage` (`content: Ticket[]`, `page: number`, `size: number`, `totalElements: number`, `totalPages: number`) — per data-model.md
+51	- [X] T007 [P] Define `src/types/comment.ts`: `Comment` (`id: string` UUID, `ticketId: string` UUID, `content: string` — required, `minLength: 1`, `createdAt: string`) — per data-model.md
+52	- [X] T008 [P] Define `src/types/apiError.ts`: `ApiError` (`code: string`, `message: string`, `timestamp: string`, `path: string`, `fieldErrors: ApiFieldError[]`), `ApiFieldError` (`field: string`, `message: string`) — per data-model.md
+53	- [X] T009 [P] Define request types in `src/types/requests.ts`, per contracts/README.md's schema table: `TicketCreateRequest` (`title: string`, `description: string`, `priority: Priority`, `assignee?: string`), `TicketUpdateRequest` (`title?: string`, `description?: string`, `priority?: Priority`, `assignee?: string` — never `status`), `TicketTransitionRequest` (`status: Status`), `TicketListParams` (`q?: string`, `status?: Status`, `page?: number`, `size?: number`), `CommentCreateRequest` (`content: string`) (depends on T006, T007)
+54	- [X] T010 Implement shared `mapFieldErrors` utility in `src/utils/mapFieldErrors.ts`: takes an `ApiError` and a list of known form field names, returns a `Record<field, message>` plus any unmatched errors as a general-error list, so `TicketForm` and `CommentForm` render backend `fieldErrors` consistently (FR-012) (depends on T008)
+55	- [X] T011 Implement typed HTTP client in `src/api/http.ts`: `fetch` wrapper using `VITE_API_BASE_URL` from `src/config/env.ts`, parses JSON, and on non-2xx responses parses and throws the body as `ApiError` (depends on T005, T008)
+56	- [X] T012 [P] Create MUI theme in `src/theme/muiTheme.ts` implementing Material Design per the constitution's UX mandate
+57	- [X] T013 Create app shell `src/App.tsx` and `src/main.tsx` wiring `QueryClientProvider` (TanStack Query), MUI `ThemeProvider` (T012), and the router (depends on T012)
+58	- [X] T014 Create router skeleton in `src/routes/router.tsx` with routes for `/` and `/tickets/new` (depends on T013); `/tickets/:id` is added in T043 (Phase 4) when `TicketDetailPage` exists, rather than as an empty placeholder now
+59	- [X] T015 [P] Create static known-users list in `src/config/assignees.ts` per research.md's "Assignee list source" decision (frontend-owned list; backend `assignee` field is a plain string with no listing endpoint)
+60	- [X] T016 [P] Set up MSW scaffold: `tests/msw/server.ts` (Node server) and `tests/msw/handlers.ts` (handlers array populated incrementally per story), wired into the Vitest setup file
+61	
+62	**Checkpoint**: Foundation ready — user story implementation can now begin
+63	
+64	---
+65	
+66	## Phase 3: User Story 1 - Create and List Tickets (Priority: P1) 🎯 MVP
+67	
+68	**Goal**: A support agent creates a ticket and sees it appear in the ticket list with title, status, priority, and assignee visible.
+69	
+70	**Independent Test**: Submit the create-ticket form with valid data and confirm the new ticket appears in the ticket list with the data entered (spec.md US1).
+71	
+72	### Tests for User Story 1
+73	
+74	- [X] T017 [P] [US1] Integration test: create-ticket success path (submits valid title/description/priority, asserts new ticket appears in list with status `OPEN`) in `tests/integration/create-ticket.test.tsx`
+75	- [X] T018 [P] [US1] Integration test: create-ticket validation-error path (empty title blocked client-side per FR-001 acceptance scenario 2; a backend `400` with `fieldErrors` is rendered next to the matching field) in `tests/integration/create-ticket.test.tsx`
+76	- [X] T019 [P] [US1] Integration test: ticket list renders title, status, priority, and assignee for each ticket without opening it (FR-002) in `tests/integration/ticket-list.test.tsx`
+77	
+78	### Implementation for User Story 1
+79	
+80	- [X] T020 [P] [US1] Add MSW handlers for `GET /api/v1/tickets` (200 `TicketPage`) and `POST /api/v1/tickets` (201 `TicketResponse` / 400 `ApiError`) in `tests/msw/handlers.ts`
+81	- [X] T021 [US1] Implement `ticketsApi.list(params: TicketListParams)` and `ticketsApi.create(request: TicketCreateRequest)` in `src/api/ticketsApi.ts`, typed per `TicketCreateRequest`/`TicketResponse`/`TicketPage` (depends on T011, T006, T009)
+82	- [X] T022 [US1] Implement `useTickets` hook (TanStack Query list + pagination) in `src/hooks/useTickets.ts` (depends on T021)
+83	- [X] T023 [US1] Implement `useCreateTicket` hook (TanStack Query mutation, invalidates the ticket list query on success) in `src/hooks/useCreateTicket.ts` (depends on T021)
+84	- [X] T024 [P] [US1] Implement `StatusBadge` component in `src/components/StatusBadge/StatusBadge.tsx` rendering one of `OPEN`/`IN_PROGRESS`/`RESOLVED`/`CLOSED`/`CANCELLED`
+85	- [X] T025 [P] [US1] Implement `PriorityBadge` component in `src/components/PriorityBadge/PriorityBadge.tsx` rendering one of `LOW`/`MEDIUM`/`HIGH`/`CRITICAL`
+86	- [X] T026 [US1] Implement `TicketForm` component (create mode) in `src/components/TicketForm/TicketForm.tsx`: `title` required non-empty (backend max 200 chars), `description` required non-empty (backend `minLength: 1`), `priority` required select from the four `Priority` values, `assignee` optional select sourced from `src/config/assignees.ts`; blocks submission and shows a field-specific error when `title` or `description` is empty, and uses the shared `mapFieldErrors` utility (T010) to render any backend `400 fieldErrors` (depends on T006, T009, T010, T013, T024, T025)
+87	- [X] T027 [US1] Implement `TicketList` component in `src/components/TicketList/TicketList.tsx` showing title/status/priority/assignee per ticket, plus a distinct empty-list state (FR-015) (depends on T024, T025)
+88	- [X] T028 [US1] Implement `TicketListPage` in `src/pages/TicketListPage.tsx` wiring `useTickets` + `TicketList` + an MUI `Pagination` control bound to `TicketPage.page`/`totalPages` (depends on T022, T027)
+89	- [X] T029 [US1] Implement `TicketCreatePage` in `src/pages/TicketCreatePage.tsx` wiring `useCreateTicket` + `TicketForm`, navigating to the ticket list on success (depends on T023, T026); navigates to `/` rather than a ticket detail route since `TicketDetailPage` doesn't exist until T042 (Phase 4) — revisit this navigation target when Phase 4 lands
+90	- [X] T030 [US1] Wire `/` → `TicketListPage` and `/tickets/new` → `TicketCreatePage` in `src/routes/router.tsx` (depends on T028, T029)
+91	
+92	**Checkpoint**: User Story 1 is fully functional and testable independently
+93	
+94	---
+95	
+96	## Phase 4: User Story 2 - View and Update Ticket Details (Priority: P1)
+97	
+98	**Goal**: A support agent opens a ticket, edits its title/description/priority/assignee, and moves it through its status lifecycle, with every transition validated by the backend.
+99	
+100	**Independent Test**: Open an existing ticket, change its priority/assignee, save, and confirm the change persists; attempt a valid and an invalid status change and confirm the correct outcome for each (spec.md US2).
+101	
+102	### Tests for User Story 2
+103	
+104	- [X] T031 [P] [US2] Integration test: view ticket detail and update title/description/priority/assignee, values reflected immediately (FR-004) in `tests/integration/update-ticket.test.tsx`
+105	- [X] T032 [P] [US2] Integration test (adapted): `TicketForm`'s client-side non-empty check mirrors the backend's own title/description validation exactly, so there is no reachable UI path that sends a blank title/description to the backend — the test instead verifies the client-caught empty-title error preserves the edit (FR-013) in `tests/integration/update-ticket.test.tsx`
+106	- [X] T033 [P] [US2] Integration test (adapted): rather than an unreachable `CLOSED → OPEN` UI path (the menu never offers an invalid option), simulates the race condition from spec.md Edge Cases — ticket closes server-side after the menu is rendered — so a real `409` round-trips and is displayed without changing the shown status (FR-010, FR-011) in `tests/integration/invalid-transition.test.tsx`
+107	- [X] T034 [P] [US2] Integration test: valid status transition (`OPEN → IN_PROGRESS`) is accepted and the new status is displayed in `tests/integration/invalid-transition.test.tsx`
+108	
+109	### Implementation for User Story 2
+110	
+111	- [X] T035 [P] [US2] Add MSW handlers for `GET /api/v1/tickets/{ticketId}` (200/404), `PATCH /api/v1/tickets/{ticketId}` (200/400/404/409), and `POST /api/v1/tickets/{ticketId}/transitions` (200/404/409) in `tests/msw/handlers.ts`, mirroring the real state machine so invalid transitions genuinely 409
+112	- [X] T036 [US2] Implement `ticketsApi.getById(id)`, `ticketsApi.update(id, request: TicketUpdateRequest)`, `ticketsApi.transition(id, request: TicketTransitionRequest)` in `src/api/ticketsApi.ts`, typed per `TicketDetail`/`TicketUpdateRequest`/`TicketTransitionRequest` — `update` never sends a `status` field (depends on T011, T006, T007, T009)
+113	- [X] T037 [US2] Implement `useTicket` hook (detail + comments query) in `src/hooks/useTicket.ts` (depends on T036)
+114	- [X] T038 [US2] Implement `useUpdateTicket` hook (mutation, invalidates detail + list queries on success) in `src/hooks/useUpdateTicket.ts` (depends on T036)
+115	- [X] T039 [US2] Implement `useTransitionTicket` hook (mutation via `POST .../transitions` only, invalidates detail + list queries on success, surfaces `409` verbatim without changing local state) in `src/hooks/useTransitionTicket.ts` (depends on T036)
+116	- [X] T040 [US2] Implement `StatusTransitionMenu` component in `src/components/StatusTransitionMenu/StatusTransitionMenu.tsx`: offers only the valid next statuses per the local map (`OPEN → IN_PROGRESS, CANCELLED`; `IN_PROGRESS → RESOLVED, CANCELLED`; `RESOLVED → CLOSED`; `CLOSED` and `CANCELLED` offer none), always calls `useTransitionTicket`, and displays a `409` rejection message without applying the change locally (Constitution Principle III) (depends on T039)
+117	- [X] T041 [US2] Extend `TicketForm` for edit mode (pre-filled values, preserves in-progress edits on save failure per FR-013) in `src/components/TicketForm/TicketForm.tsx` (depends on T026)
+118	- [X] T042 [US2] Implement `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` wiring `useTicket`, `TicketForm` (edit mode), `StatusTransitionMenu`, `StatusBadge`, `PriorityBadge` (depends on T037, T038, T040, T041)
+119	- [X] T043 [US2] Wire `/tickets/:ticketId` → `TicketDetailPage` in `src/routes/router.tsx` (depends on T042); also updated T029's `TicketCreatePage` to navigate to this route now that it exists, resolving that phase's earlier placeholder
+120	
+121	**Checkpoint**: User Stories 1 AND 2 both work independently
+122	
+123	---
+124	
+125	## Phase 5: User Story 3 - Add Comments to a Ticket (Priority: P2)
+126	
+127	**Goal**: A support agent adds a comment to a ticket and sees the full, ordered comment history.
+128	
+129	**Independent Test**: Open a ticket, submit a comment, confirm it appears in the ticket's comment history in order (spec.md US3).
+130	
+131	### Tests for User Story 3
+132	
+133	- [X] T044 [P] [US3] Integration test (adapted): comment appears in chronological order with its timestamp (FR-006) in `tests/integration/add-comment.test.tsx` — no author assertion; see implementation note on T049 for why
+134	- [X] T045 [P] [US3] Integration test: empty comment is blocked client-side, no request sent (FR-006, spec.md US3 acceptance scenario 2) in `tests/integration/add-comment.test.tsx`
+135	
+136	### Implementation for User Story 3
+137	
+138	- [X] T046 [P] [US3] Add MSW handler for `POST /api/v1/tickets/{ticketId}/comments` (201 `CommentResponse` / 400 `ApiError`) in `tests/msw/handlers.ts`
+139	- [X] T047 [US3] Implement `commentsApi.addComment(ticketId, request: CommentCreateRequest)` in `src/api/commentsApi.ts`, typed per `CommentCreateRequest`/`CommentResponse` — `content` required, `minLength: 1` (depends on T011, T007, T009)
+140	- [X] T048 [US3] Implement `useAddComment` hook (mutation, invalidates the ticket detail query on success) in `src/hooks/useAddComment.ts` (depends on T047)
+141	- [X] T049 [P] [US3] Implement `CommentList` component in `src/components/CommentList/CommentList.tsx` rendering comments in chronological (creation) order — **deviation**: renders content + timestamp only, no author. `backend-api-doc.json`'s `CommentResponse` has no author field at all (and this slice has no authentication per spec.md Assumptions), so "author" from spec.md FR-006/US3 cannot be populated from the real backend contract. This is a genuine spec-vs-backend-contract gap, not a simplification; flagging for spec.md follow-up rather than fabricating an author value.
+142	- [X] T050 [P] [US3] Implement `CommentForm` component in `src/components/CommentForm/CommentForm.tsx`: `content` required, non-empty, blocks submission with a field error otherwise, using the shared `mapFieldErrors` utility (T010) to render any backend `400 fieldErrors` (depends on T010)
+143	- [X] T051 [US3] Wire `CommentList` + `CommentForm` into `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` (depends on T048, T049, T050, T042)
+144	
+145	### Amendment for User Story 3 — comment listing is now a dedicated paginated endpoint
+146	
+147	`backend-api-doc.json` was updated (spec.md Clarifications, 2026-09-21) to
+148	add `GET /api/v1/tickets/{ticketId}/comments` returning a paginated
+149	`CommentPage` (oldest-to-newest, default `size` 20), confirming comments
+150	have no author field. T044–T051 above implemented comments against the
+151	old assumption (reading `ticket.comments` from `TicketDetailResponse`,
+152	unpaginated). These tasks correct that per plan.md/research.md's "Comment
+153	listing" decision — see data-model.md's `CommentPage` section for the
+154	exact shape.
+155	
+156	- [X] T052 [P] [US3] Add `CommentPage` to `src/types/comment.ts`: `content: Comment[]`, `page: number`, `size: number`, `totalElements: number`, `totalPages: number` — per data-model.md
+157	- [X] T053 [P] [US3] Update MSW handlers in `tests/msw/handlers.ts`: add `GET /api/v1/tickets/:ticketId/comments` returning a paginated `CommentPage` (200, oldest-to-newest, default `size` 20) / `404 ApiError` for a missing ticket; keep the existing `POST .../comments` handler (depends on T052)
+158	- [X] T054 [US3] Implement `commentsApi.list(ticketId, params?: { page?: number; size?: number })` in `src/api/commentsApi.ts`, typed per `CommentPage`, calling `GET /api/v1/tickets/{ticketId}/comments` (depends on T011, T052)
+159	- [X] T055 [US3] Implement `useComments` hook (TanStack Query, keyed by `["comments", ticketId, page]`, independent of the ticket-detail query) in `src/hooks/useComments.ts` (depends on T054)
+160	- [X] T056 [US3] Update `useAddComment` hook in `src/hooks/useAddComment.ts` to invalidate the `["comments", ticketId]` query (in addition to, or instead of, `["ticket", ticketId]`) on success, so a new comment reappears without re-requesting every previously loaded page (spec.md Edge Cases) (depends on T055)
+161	- [X] T057 [US3] Update `CommentList` in `src/components/CommentList/CommentList.tsx` to accept a `CommentPage` (or its `content`/`page`/`totalPages`) plus a page-change callback, and render an MUI `Pagination` control when `totalPages > 1` (depends on T052)
+162	- [X] T058 [US3] Rewire `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` to source the comment list from `useComments` (own `page` state) instead of `ticket.comments`, passing the page-change callback to `CommentList` (depends on T055, T057)
+163	- [X] T059 [P] [US3] Integration test: a ticket seeded with more comments than one page shows a way to load additional pages, and all comments across pages remain visible on request (FR-006a) in `tests/integration/add-comment.test.tsx` (depends on T053, T058)
+164	
+165	**Checkpoint**: User Stories 1, 2, AND 3 (with corrected, paginated comment listing) all work independently
+166	
+167	---
+168	
+169	## Phase 6: User Story 4 - Search and Filter Tickets (Priority: P3)
+170	
+171	**Goal**: A support agent narrows the ticket list by keyword and/or status.
+172	
+173	**Independent Test**: Enter a keyword matching one ticket's title/description and confirm only matching tickets show; select a status filter and confirm only tickets in that status show (spec.md US4).
+174	
+175	### Tests for User Story 4
+176	
+177	- [X] T060 [P] [US4] Integration test: keyword search narrows the list to tickets matching title/description only (FR-007, per Clarifications 2026-09-21); MSW fixture for this test seeds at least 50 tickets to reflect SC-002's scale assumption in `tests/integration/search-filter.test.tsx`
+178	- [X] T061 [P] [US4] Integration test: status filter narrows the list to tickets in the selected status (FR-008) in `tests/integration/search-filter.test.tsx`
+179	- [X] T062 [P] [US4] Integration test: keyword search and status filter combined narrow to the intersection (FR-009) in `tests/integration/search-filter.test.tsx`
+180	- [X] T063 [P] [US4] Integration test: a search/filter combination matching nothing shows a "no results" state distinct from the empty-list state (FR-015) in `tests/integration/search-filter.test.tsx`
+181	
+182	### Implementation for User Story 4
+183	
+184	- [X] T064 [US4] Extend `useTickets` hook in `src/hooks/useTickets.ts` to accept and pass `q` and `status` query params together (depends on T022) — already satisfied: the hook takes the full `TicketListParams` (including `q`/`status`) and passes it straight to `ticketsApi.list`; no code change needed, only the call site (T067)
+185	- [X] T065 [P] [US4] Implement `SearchBar` component (debounced keyword input) in `src/components/TicketList/SearchBar.tsx`
+186	- [X] T066 [P] [US4] Implement `StatusFilter` component (select from `OPEN`/`IN_PROGRESS`/`RESOLVED`/`CLOSED`/`CANCELLED` plus "All") in `src/components/TicketList/StatusFilter.tsx`
+187	- [X] T067 [US4] Wire `SearchBar` + `StatusFilter` into `TicketListPage`, combining both into the `useTickets` params, and render the "no results" state distinctly from the empty-list state (FR-015) in `src/pages/TicketListPage.tsx` (depends on T064, T065, T066, T028)
+188	
+189	**Checkpoint**: All user stories are independently functional
+190	
+191	---
+192	
+193	## Phase 7: Polish & Cross-Cutting Concerns
+194	
+195	**Purpose**: Improvements that affect multiple user stories
+196	
+197	- [X] T068 [P] Add a global error `Snackbar`/`Alert` for unexpected/network failures (e.g. backend unreachable — spec.md Edge Cases) in `src/App.tsx` — scoped to silent background-refetch failures (query already has cached data, so no local `isError` UI would otherwise show it), to avoid duplicating the error Alerts each page/form already renders for a first-load or mutation failure
+198	- [X] T069 [P] Add `package.json` scripts: `"typecheck": "tsc --noEmit"`, `"test": "vitest run"`, `"lint"` — already present from T001/Setup; verified unchanged
+199	- [X] T070 Ran `npm run build` (typecheck + production Vite build) successfully as an automated proxy for `quickstart.md`'s setup/build step. **Not run**: the manual browser walkthrough scenarios in quickstart.md, since no live instance of the backend from `backend-api-doc.json` is running in this environment — that requires a human (or a separate backend-running environment) to execute
+200	- [X] T071 [P] Verified: `grep -rn "\bany\b"` across `src/`/`tests/` → none; no `fetch`/`axios` call outside `src/api/`; ESLint's `@typescript-eslint/no-explicit-any: "error"` active; `git check-ignore -v .env.local` confirms it's git-ignored (Constitution Principles II, V, VI)
+201	
+202	---
+203	
+204	## Dependencies & Execution Order
+205	
+206	### Phase Dependencies
+207	
+208	- **Setup (Phase 1)**: No dependencies — start immediately
+209	- **Foundational (Phase 2)**: Depends on Setup completion — BLOCKS all user stories
+210	- **User Stories (Phase 3–6)**: All depend on Foundational phase completion
+211	  - US1 and US2 are both P1 and have no dependency on each other's business logic, but US2's `TicketDetailPage`/`TicketForm` edit mode (T041–T043) build on US1's `TicketForm`/routing (T026, T030) — implement US1 first
+212	  - US3 (comments) integrates into `TicketDetailPage` from US2 (T042) — implement after US2. Its amendment tasks (T052–T059) correct the comment list to the now-paginated backend endpoint and must land before US4, since T067 (US4) touches `TicketListPage.tsx`, a file `TicketDetailPage.tsx`'s comment rewiring does not share — no ordering conflict, but do T052–T059 before considering US3 complete
+213	  - US4 (search/filter) extends `useTickets`/`TicketListPage` from US1 (T022, T028) — implement after US1; independent of US2/US3
+214	- **Polish (Phase 7)**: Depends on all desired user stories being complete
+215	
+216	### User Story Dependencies
+217	
+218	- **User Story 1 (P1)**: Foundational only
+219	- **User Story 2 (P1)**: Foundational + reuses `TicketForm`/router from US1 (T026, T030)
+220	- **User Story 3 (P2)**: Foundational + integrates into `TicketDetailPage` from US2 (T042)
+221	- **User Story 4 (P3)**: Foundational + extends `useTickets`/`TicketListPage` from US1 (T022, T028)
+222	
+223	### Within Each User Story
+224	
+225	- Tests written first, expected to fail before implementation
+226	- Types/API client before hooks
+227	- Hooks before components that consume them
+228	- Components before the page that wires them
+229	- Page before router wiring
+230	
+231	### Parallel Opportunities
+232	
+233	- T002–T005 (Setup) in parallel
+234	- T006–T009, T012, T015, T016 (Foundational) in parallel
+235	- T017–T019 (US1 tests) in parallel; T024–T025 (US1 badges) in parallel
+236	- T031–T034 (US2 tests) in parallel
+237	- T044–T045 (US3 tests) in parallel; T049–T050 (US3 components) in parallel
+238	- T052–T053 (US3 amendment: type + MSW handler) in parallel
+239	- T060–T063 (US4 tests) in parallel; T065–T066 (US4 components) in parallel
+240	- Once Foundational completes, US1 and (with the noted reuse points) US4 can proceed in parallel with different developers; US2 and US3 are best sequenced after US1 due to the reuse points above
+241	
+242	---
+243	
+244	## Parallel Example: User Story 1
+245	
+246	```bash
+247	# Launch all tests for User Story 1 together:
+248	Task: "Integration test: create-ticket success path in tests/integration/create-ticket.test.tsx"
+249	Task: "Integration test: create-ticket validation-error path in tests/integration/create-ticket.test.tsx"
+250	Task: "Integration test: ticket list renders title/status/priority/assignee in tests/integration/ticket-list.test.tsx"
+251	
+252	# Launch independent presentational components for User Story 1 together:
+253	Task: "Implement StatusBadge component in src/components/StatusBadge/StatusBadge.tsx"
+254	Task: "Implement PriorityBadge component in src/components/PriorityBadge/PriorityBadge.tsx"
+255	```
+256	
+257	---
+258	
+259	## Implementation Strategy
+260	
+261	### MVP First (User Story 1 Only)
+262	
+263	1. Complete Phase 1: Setup
+264	2. Complete Phase 2: Foundational (CRITICAL — blocks all stories)
+265	3. Complete Phase 3: User Story 1 (Create and List Tickets)
+266	4. **STOP and VALIDATE**: Run `tests/integration/create-ticket.test.tsx` and `ticket-list.test.tsx`; manually create a ticket and confirm it lists (quickstart.md scenario 1)
+267	5. Deploy/demo if ready — this alone satisfies "Ticket can be created from UI" and "Tickets can be listed" from the application requirements' acceptance criteria
+268	
+269	### Incremental Delivery
+270	
+271	1. Setup + Foundational → foundation ready
+272	2. Add US1 → test independently → demo (MVP)
+273	3. Add US2 → test independently → demo (adds view/update/status transitions)
+274	4. Add US3 → test independently → demo (adds comments)
+275	5. Add US4 → test independently → demo (adds search/filter)
+276	6. Polish (Phase 7)
+277	
+278	### Parallel Team Strategy
+279	
+280	With multiple developers, after Foundational completes:
+281	
+282	- Developer A: User Story 1, then User Story 2 (reuses US1's `TicketForm`/router)
+283	- Developer B: User Story 4 once US1's `useTickets`/`TicketListPage` land
+284	- Developer C: User Story 3 once US2's `TicketDetailPage` lands
+285	
+286	---
+287	
+288	## Notes
+289	
+290	- [P] tasks = different files, no dependencies
+291	- [Story] label maps task to specific user story for traceability
+292	- Each user story is independently completable and testable
+293	- Verify tests fail before implementing
+294	- Commit after each task or logical group
+295	- Stop at any checkpoint to validate a story independently
+296
+````
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:42:47Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:42:49Z)**_
+
+Now renumber everything from old T044 onward (+11 shift) — Phase 5, Phase 6, Phase 7, and all cross-reference prose.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:16Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:28Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:51Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:52Z)**_
+
+Now update Parallel Opportunities section.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:56Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:43:58Z)**_
+
+Let's verify no stale IDs remain anywhere in the file.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:44:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify task ID uniqueness and range
+
+`grep -oE 'T[0-9]+' specs/001-ticket-management-ui/tasks.md | sort -t T -k2 -n -u > /tmp/all_ids.txt; grep -oE '^- \[[Xx ]\] T[0-9]+' specs/001-ticket-management-ui/tasks.md | grep -oE 'T[0-9]+' | sort -u > /tmp/task_ids.txt; echo "Total unique task lines:"; wc -l /tmp/task_ids.txt; echo "Max task id:"; tail -1 /tmp/task_ids.txt; echo "Any duplicate task IDs (task-line only)?"; grep -oE '^- \[[Xx ]\] T[0-9]+' specs/001-ticket-management-ui/tasks.md | grep -oE 'T[0-9]+' | sort | uniq -d`
+
+```text
+Total unique task lines:
+82 /tmp/task_ids.txt
+Max task id:
+T082
+Any duplicate task IDs (task-line only)?
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:44:05Z)**_
+
+82 unique tasks, T001–T082, no duplicates. Let's confirm counts of checked/unchecked and spot-check for any leftover old-numbered cross-references I might have missed.
+
+_**Agent (claude-sonnet-5 2026-09-21 11:44:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Count checked/unchecked and scan for stale references
+
+`echo "Checked:"; grep -c '^- \[X\] T[0-9]' specs/001-ticket-management-ui/tasks.md; echo "Unchecked:"; grep -c '^- \[ \] T[0-9]' specs/001-ticket-management-ui/tasks.md; echo "--- sanity: search for any prose mentioning T044-T071 range that might be stale (excluding new correct spots) ---"; grep -n 'T0[4-6][0-9]\|T07[01]' specs/001-ticket-management-ui/tasks.md`
+
+```text
+Checked:
+70
+Unchecked:
+12
+--- sanity: search for any prose mentioning T044-T071 range that might be stale (excluding new correct spots) ---
+58:- [X] T014 Create router skeleton in `src/routes/router.tsx` with routes for `/` and `/tickets/new` (depends on T013); `/tickets/:id` is added in T043 (Phase 4) when `TicketDetailPage` exists, rather than as an empty placeholder now
+89:- [X] T029 [US1] Implement `TicketCreatePage` in `src/pages/TicketCreatePage.tsx` wiring `useCreateTicket` + `TicketForm`, navigating to the ticket list on success (depends on T023, T026); navigates to `/` rather than a ticket detail route since `TicketDetailPage` doesn't exist until T042 (Phase 4) — revisit this navigation target when Phase 4 lands
+116:- [X] T040 [US2] Implement `StatusTransitionMenu` component in `src/components/StatusTransitionMenu/StatusTransitionMenu.tsx`: offers only the valid next statuses per the local map (`OPEN → IN_PROGRESS, CANCELLED`; `IN_PROGRESS → RESOLVED, CANCELLED`; `RESOLVED → CLOSED`; `CLOSED` and `CANCELLED` offer none), always calls `useTransitionTicket`, and displays a `409` rejection message without applying the change locally (Constitution Principle III) (depends on T039)
+117:- [X] T041 [US2] Extend `TicketForm` for edit mode (pre-filled values, preserves in-progress edits on save failure per FR-013) in `src/components/TicketForm/TicketForm.tsx` (depends on T026)
+118:- [X] T042 [US2] Implement `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` wiring `useTicket`, `TicketForm` (edit mode), `StatusTransitionMenu`, `StatusBadge`, `PriorityBadge` (depends on T037, T038, T040, T041)
+119:- [X] T043 [US2] Wire `/tickets/:ticketId` → `TicketDetailPage` in `src/routes/router.tsx` (depends on T042); also updated T029's `TicketCreatePage` to navigate to this route now that it exists, resolving that phase's earlier placeholder
+131:`TicketDetailPage` (T037–T043) and its later comment-pagination rewiring
+135:- [ ] T044 [P] [US2] Implement generic `Breadcrumbs` component in `src/components/Breadcrumbs/Breadcrumbs.tsx`: accepts an ordered `{ label: string; to?: string }[]` prop, renders MUI `Breadcrumbs` with a React Router `Link` for each segment that has `to`, and plain `Typography` for the final/current segment (FR-020)
+136:- [ ] T045 [US2] Implement `TicketEditPage` in `src/pages/TicketEditPage.tsx`: fetches the ticket via `useTicket`, renders `Breadcrumbs` (`"Tickets" → "/"`, ticket title `→ "/tickets/{id}"`, `"Edit"`) plus `TicketForm` in edit mode wired to `useUpdateTicket`, and navigates to `/tickets/{id}` on a successful save (FR-004, FR-017, FR-019) (depends on T037, T038, T041, T044)
+137:- [ ] T046 [US2] Simplify `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` to read-only: remove the inline `TicketForm`, add `Breadcrumbs` (`"Tickets" → "/"`, ticket title), add an "Edit" link to `/tickets/{id}/edit`; keep `StatusTransitionMenu`, `CommentList`, `CommentForm` as-is (FR-003) (depends on T044)
+138:- [ ] T047 [US2] Add `/tickets/:ticketId/edit` → `TicketEditPage` route in `src/routes/router.tsx` (depends on T045)
+139:- [ ] T048 [P] [US2] Add a "View" action (link to `/tickets/{id}`) per ticket row in `TicketList` component in `src/components/TicketList/TicketList.tsx` (FR-016) — the list previously had no way to open an existing ticket at all
+140:- [ ] T049 [P] [US2] Add `Breadcrumbs` (`"Tickets"`, current page, not a link) to `TicketListPage` in `src/pages/TicketListPage.tsx` (depends on T044)
+141:- [ ] T050 [P] [US2] Add `Breadcrumbs` (`"Tickets" → "/"`, `"New Ticket"`) to `TicketCreatePage` in `src/pages/TicketCreatePage.tsx` (depends on T044)
+142:- [ ] T051 [P] [US2] Integration test: clicking "View" on a ticket in the list navigates to its read-only detail page with no editable fields, and clicking "Edit" there navigates to a separate edit page with fields pre-filled (FR-003, FR-016, FR-017) in `tests/integration/view-edit-navigation.test.tsx`
+143:- [ ] T052 [US2] Integration test: saving the edit page navigates back to the read-only detail page with updated values shown, and each page's breadcrumb trail matches spec.md FR-020's examples (FR-004, FR-019, FR-020) in `tests/integration/view-edit-navigation.test.tsx` (depends on T045, T046)
+144:- [ ] T053 [US2] Update `tests/integration/update-ticket.test.tsx` to navigate via the "Edit" link/page instead of asserting an inline edit form on the detail page, since editing moved to a separate page (depends on T045, T046)
+145:- [ ] T054 [P] [US2] Re-run `tests/integration/create-ticket.test.tsx` unchanged: its existing assertion that creating a ticket lands on the read-only detail page (FR-018) still holds after the `TicketDetailPage` read-only refactor — no code change expected, verification only (depends on T046)
+159:- [X] T055 [P] [US3] Integration test (adapted): comment appears in chronological order with its timestamp (FR-006) in `tests/integration/add-comment.test.tsx` — no author assertion; see implementation note on T060 for why
+160:- [X] T056 [P] [US3] Integration test: empty comment is blocked client-side, no request sent (FR-006, spec.md US3 acceptance scenario 2) in `tests/integration/add-comment.test.tsx`
+164:- [X] T057 [P] [US3] Add MSW handler for `POST /api/v1/tickets/{ticketId}/comments` (201 `CommentResponse` / 400 `ApiError`) in `tests/msw/handlers.ts`
+165:- [X] T058 [US3] Implement `commentsApi.addComment(ticketId, request: CommentCreateRequest)` in `src/api/commentsApi.ts`, typed per `CommentCreateRequest`/`CommentResponse` — `content` required, `minLength: 1` (depends on T011, T007, T009)
+166:- [X] T059 [US3] Implement `useAddComment` hook (mutation, invalidates the ticket detail query on success) in `src/hooks/useAddComment.ts` (depends on T058)
+167:- [X] T060 [P] [US3] Implement `CommentList` component in `src/components/CommentList/CommentList.tsx` rendering comments in chronological (creation) order — **deviation**: renders content + timestamp only, no author. `backend-api-doc.json`'s `CommentResponse` has no author field at all (and this slice has no authentication per spec.md Assumptions), so "author" from spec.md FR-006/US3 cannot be populated from the real backend contract. This is a genuine spec-vs-backend-contract gap, not a simplification; flagging for spec.md follow-up rather than fabricating an author value.
+168:- [X] T061 [P] [US3] Implement `CommentForm` component in `src/components/CommentForm/CommentForm.tsx`: `content` required, non-empty, blocks submission with a field error otherwise, using the shared `mapFieldErrors` utility (T010) to render any backend `400 fieldErrors` (depends on T010)
+169:- [X] T062 [US3] Wire `CommentList` + `CommentForm` into `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` (depends on T059, T060, T061, T042)
+176:have no author field. T055–T062 above implemented comments against the
+182:- [X] T063 [P] [US3] Add `CommentPage` to `src/types/comment.ts`: `content: Comment[]`, `page: number`, `size: number`, `totalElements: number`, `totalPages: number` — per data-model.md
+183:- [X] T064 [P] [US3] Update MSW handlers in `tests/msw/handlers.ts`: add `GET /api/v1/tickets/:ticketId/comments` returning a paginated `CommentPage` (200, oldest-to-newest, default `size` 20) / `404 ApiError` for a missing ticket; keep the existing `POST .../comments` handler (depends on T063)
+184:- [X] T065 [US3] Implement `commentsApi.list(ticketId, params?: { page?: number; size?: number })` in `src/api/commentsApi.ts`, typed per `CommentPage`, calling `GET /api/v1/tickets/{ticketId}/comments` (depends on T011, T063)
+185:- [X] T066 [US3] Implement `useComments` hook (TanStack Query, keyed by `["comments", ticketId, page]`, independent of the ticket-detail query) in `src/hooks/useComments.ts` (depends on T065)
+186:- [X] T067 [US3] Update `useAddComment` hook in `src/hooks/useAddComment.ts` to invalidate the `["comments", ticketId]` query (in addition to, or instead of, `["ticket", ticketId]`) on success, so a new comment reappears without re-requesting every previously loaded page (spec.md Edge Cases) (depends on T066)
+187:- [X] T068 [US3] Update `CommentList` in `src/components/CommentList/CommentList.tsx` to accept a `CommentPage` (or its `content`/`page`/`totalPages`) plus a page-change callback, and render an MUI `Pagination` control when `totalPages > 1` (depends on T063)
+188:- [X] T069 [US3] Rewire `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` to source the comment list from `useComments` (own `page` state) instead of `ticket.comments`, passing the page-change callback to `CommentList` (depends on T066, T068)
+189:- [X] T070 [P] [US3] Integration test: a ticket seeded with more comments than one page shows a way to load additional pages, and all comments across pages remain visible on request (FR-006a) in `tests/integration/add-comment.test.tsx` (depends on T064, T069)
+203:- [X] T071 [P] [US4] Integration test: keyword search narrows the list to tickets matching title/description only (FR-007, per Clarifications 2026-09-21); MSW fixture for this test seeds at least 50 tickets to reflect SC-002's scale assumption in `tests/integration/search-filter.test.tsx`
+237:  - US1 and US2 are both P1 and have no dependency on each other's business logic, but US2's `TicketDetailPage`/`TicketForm` edit mode (T041–T043) build on US1's `TicketForm`/routing (T026, T030) — implement US1 first
+238:  - US2's View/Edit split amendment (T044–T054) touches `TicketListPage.tsx` (adding the "View" link and breadcrumbs, T048–T049) and `TicketCreatePage.tsx` (breadcrumbs, T050), both US1 files — do this amendment after US1 exists, which it already does
+239:  - US3 (comments) integrates into `TicketDetailPage` from US2 (T042) — implement after US2, and after US2's View/Edit amendment (T046 removes `TicketDetailPage`'s inline form; T062 wires comments into the same file — both must land, in either order relative to each other, before US3 is considered complete). Its own amendment tasks (T063–T070) correct the comment list to the now-paginated backend endpoint
+240:  - US4 (search/filter) extends `useTickets`/`TicketListPage` from US1 (T022, T028) — implement after US1; independent of US2/US3, but shares `TicketListPage.tsx` with US2's amendment (T049, T078) — sequence those two edits, don't parallelize them
+246:- **User Story 2 (P1)**: Foundational + reuses `TicketForm`/router from US1 (T026, T030); its View/Edit amendment (T044–T054) also touches US1's `TicketListPage.tsx`/`TicketCreatePage.tsx`
+247:- **User Story 3 (P2)**: Foundational + integrates into `TicketDetailPage` from US2 (T042, and after US2's amendment T046)
+248:- **User Story 4 (P3)**: Foundational + extends `useTickets`/`TicketListPage` from US1 (T022, T028); shares `TicketListPage.tsx` with US2's amendment (T049)
+264:- T048–T050 (US2 amendment: list "View" link, list breadcrumbs, create-page breadcrumbs) in parallel — different files; T044 (Breadcrumbs component) is a dependency of T049/T050 but can run alongside T048 (no shared file)
+265:- T055–T056 (US3 tests) in parallel; T060–T061 (US3 components) in parallel
+266:- T063–T064 (US3 amendment: type + MSW handler) in parallel
+267:- T071–T074 (US4 tests) in parallel; T076–T077 (US4 components) in parallel
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 11:44:16Z)**_
+
+All consistent — T041–T043 correctly stayed (unchanged, unaffected range), new/renumbered ranges all check out. No `.specify/extensions.yml` — hooks skipped.
+
+**tasks.md updated**: `specs/001-ticket-management-ui/tasks.md`
+
+- Total: **82 tasks** (was 71) — **70 done**, **12 pending**
+- New: **11 amendment tasks** (T044–T054) inserted into Phase 4 (US2), implementing the View/Edit page split, redirects, and breadcrumbs:
+  - T044 generic `Breadcrumbs` component
+  - T045 `TicketEditPage` (form only, redirects to detail on save)
+  - T046 simplify `TicketDetailPage` to read-only + "Edit" link
+  - T047 `/tickets/:ticketId/edit` route
+  - T048 "View" action on list rows (**gap found**: list had no way to open a ticket at all until now)
+  - T049/T050 breadcrumbs on list/create pages
+  - T051/T052 new navigation-flow integration tests
+  - T053 adapt `update-ticket.test.tsx` to the new Edit page
+  - T054 verification that create's existing redirect-to-detail assertion still holds
+- Renumbered: US3 original (T055–T062), US3 pagination amendment (T063–T070), US4 (T071–T078), Polish (T079–T082) — T070 (`Run quickstart.md`/build) reset to **unchecked**, since breadcrumb/view-edit changes invalidate its prior verification and it needs a re-run.
+- Dependencies/Parallel/User-Story-Dependencies sections updated: flagged that T049 and T078 both touch `TicketListPage.tsx` (sequence, don't parallelize), and that T046/T062 both touch `TicketDetailPage.tsx`.
+
+Verified via grep: 82 unique task IDs T001–T082, no duplicates, no stale cross-references remaining.
+
+Next: `/speckit-implement` to build T044–T054.
+
+---
+
+_**User (2026-09-21 14:16:21Z)**_
+
+<command-message>speckit-implement</command-message>
+<command-name>/speckit-implement</command-name>
+
+---
+
+_**User (2026-09-21 14:16:21Z)**_
+
+Base directory for this skill: /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/.claude/skills/speckit-implement
+
+## User Input
+
+```text
+
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Pre-Execution Checks
+
+**Check for extension hooks (before implementation)**:
+- Check if `.specify/extensions.yml` exists in the project root.
+- If it exists, read it and look for entries under the `hooks.before_implement` key
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue normally
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Pre-Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+  - **Mandatory hook** (`optional: false`):
+    ```
+    ## Extension Hooks
+
+    **Automatic Pre-Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+
+    Wait for the result of the hook command before proceeding to the Outline.
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+- If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
+
+## Outline
+
+1. Run `python3 .specify/scripts/python/check_prerequisites.py --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
+   - Treat checklist markers as a read-only gate: scan checkbox state, report status, and ask before proceeding when needed; do NOT modify checklist files or markers
+   - `checklists/requirements.md` is the built-in spec-quality checklist maintained by `/speckit-specify` and `/speckit-clarify`; custom checklists generated by `/speckit-checklist` are reviewer-owned requirements-quality review artifacts
+   - For custom checklists, `[x]` means the reviewer determined the requirements-quality criterion is satisfied; it does NOT mean implementation work is complete
+   - Scan all checklist files in the checklists/ directory
+   - For each checklist, count:
+     - Total items: All lines matching `- [ ]` or `- [X]` or `- [x]`
+     - Checked items: Lines matching `- [X]` or `- [x]`
+     - Unchecked items: Lines matching `- [ ]`
+   - Create a status table:
+
+     ```text
+     | Checklist | Total | Checked | Unchecked | Status |
+     |-----------|-------|---------|-----------|--------|
+     | ux.md     | 12    | 12      | 0         | ✓ PASS |
+     | test.md   | 8     | 5       | 3         | ✗ FAIL |
+     | security.md | 6   | 6       | 0         | ✓ PASS |
+     ```
+
+   - Calculate overall status:
+     - **PASS**: All checklists have 0 unchecked items
+     - **FAIL**: One or more checklists have unchecked items
+
+   - **If any checklist has unchecked items**:
+     - Display the table with unchecked item counts
+     - **STOP** and ask: "Some checklists have unchecked items. Do you want to proceed with implementation anyway? (yes/no)"
+     - Wait for user response before continuing
+     - If user says "no" or "wait" or "stop", halt execution
+     - If user says "yes" or "proceed" or "continue", proceed to step 3
+
+   - **If all checklists are checked**:
+     - Display the table showing all checklists passed
+     - Automatically proceed to step 3
+
+3. Load and analyze the implementation context:
+   - **REQUIRED**: Read tasks.md for the complete task list and execution plan
+   - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
+   - **IF EXISTS**: Read data-model.md for entities and relationships
+   - **IF EXISTS**: Read contracts/ for API specifications and test requirements
+   - **IF EXISTS**: Read research.md for technical decisions and constraints
+   - **IF EXISTS**: Read .specify/memory/constitution.md for governance constraints
+   - **IF EXISTS**: Read quickstart.md for integration scenarios
+
+4. **Project Setup Verification**:
+   - **REQUIRED**: Create/verify ignore files based on actual project setup:
+
+   **Detection & Creation Logic**:
+   - Check if the following command succeeds to determine if the repository is a git repo (create/verify .gitignore if so):
+
+     ```sh
+     git rev-parse --git-dir 2>/dev/null
+     ```
+
+   - Check if Dockerfile* exists or Docker in plan.md → create/verify .dockerignore
+   - Check if .eslintrc* exists → create/verify .eslintignore
+   - Check if eslint.config.* exists → ensure the config's `ignores` entries cover required patterns
+   - Check if .prettierrc* exists → create/verify .prettierignore
+   - Check if .npmrc or package.json exists → create/verify .npmignore (if publishing)
+   - Check if terraform files (*.tf) exist → create/verify .terraformignore
+   - Check if .helmignore needed (helm charts present) → create/verify .helmignore
+
+   **If ignore file already exists**: Verify it contains essential patterns, append missing critical patterns only
+   **If ignore file missing**: Create with full pattern set for detected technology
+
+   **Common Patterns by Technology** (from plan.md tech stack):
+   - **Node.js/JavaScript/TypeScript**: `node_modules/`, `dist/`, `build/`, `*.log`, `.env*`
+   - **Python**: `__pycache__/`, `*.pyc`, `.venv/`, `venv/`, `dist/`, `*.egg-info/`
+   - **Java**: `target/`, `*.class`, `*.jar`, `.gradle/`, `build/`
+   - **C#/.NET**: `bin/`, `obj/`, `*.user`, `*.suo`, `packages/`
+   - **Go**: `*.exe`, `*.test`, `vendor/`, `*.out`
+   - **Ruby**: `.bundle/`, `log/`, `tmp/`, `*.gem`, `vendor/bundle/`
+   - **PHP**: `vendor/`, `*.log`, `*.cache`, `*.env`
+   - **Rust**: `target/`, `debug/`, `release/`, `*.rs.bk`, `*.rlib`, `*.prof*`, `.idea/`, `*.log`, `.env*`
+   - **Kotlin**: `build/`, `out/`, `.gradle/`, `.idea/`, `*.class`, `*.jar`, `*.iml`, `*.log`, `.env*`
+   - **C++**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.so`, `*.a`, `*.exe`, `*.dll`, `.idea/`, `*.log`, `.env*`
+   - **C**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.a`, `*.so`, `*.exe`, `*.dll`, `autom4te.cache/`, `config.status`, `config.log`, `.idea/`, `*.log`, `.env*`
+   - **Swift**: `.build/`, `DerivedData/`, `*.swiftpm/`, `Packages/`
+   - **R**: `.Rproj.user/`, `.Rhistory`, `.RData`, `.Ruserdata`, `*.Rproj`, `packrat/`, `renv/`
+   - **Universal**: `.DS_Store`, `Thumbs.db`, `*.tmp`, `*.swp`, `.vscode/`, `.idea/`
+
+   **Tool-Specific Patterns**:
+   - **Docker**: `node_modules/`, `.git/`, `Dockerfile*`, `.dockerignore`, `*.log*`, `.env*`, `coverage/`
+   - **ESLint**: `node_modules/`, `dist/`, `build/`, `coverage/`, `*.min.js`
+   - **Prettier**: `node_modules/`, `dist/`, `build/`, `coverage/`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
+   - **Terraform**: `.terraform/`, `*.tfstate*`, `*.tfvars`, `.terraform.lock.hcl`
+   - **Kubernetes/k8s**: `*.secret.yaml`, `secrets/`, `.kube/`, `kubeconfig*`, `*.key`, `*.crt`
+
+5. Parse tasks.md structure and extract:
+   - **Task phases**: Setup, Tests, Core, Integration, Polish
+   - **Task dependencies**: Sequential vs parallel execution rules
+   - **Task details**: ID, description, file paths, parallel markers [P]
+   - **Execution flow**: Order and dependency requirements
+
+6. Execute implementation following the task plan:
+   - **Phase-by-phase execution**: Complete each phase before moving to the next
+   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together
+   - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
+   - **File-based coordination**: Tasks affecting the same files must run sequentially
+   - **Validation checkpoints**: Verify each phase completion before proceeding
+
+7. Implementation execution rules:
+   - **Setup first**: Initialize project structure, dependencies, configuration
+   - **Tests before code**: If you need to write tests for contracts, entities, and integration scenarios
+   - **Core development**: Implement models, services, CLI commands, endpoints
+   - **Integration work**: Database connections, middleware, logging, external services
+   - **Polish and validation**: Unit tests, performance optimization, documentation
+
+8. Progress tracking and error handling:
+   - Report progress after each completed task
+   - Halt execution if any non-parallel task fails
+   - For parallel tasks [P], continue with successful tasks, report failed ones
+   - Provide clear error messages with context for debugging
+   - Suggest next steps if implementation cannot proceed
+   - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
+
+9. Completion validation:
+   - Verify all required tasks are completed
+   - Check that implemented features match the original specification
+   - Validate that tests pass and coverage meets requirements
+   - Confirm the implementation follows the technical plan
+
+Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit-tasks` first to regenerate the task list.
+
+## Mandatory Post-Execution Hooks
+
+**You MUST complete this section before reporting completion to the user.**
+
+Check if `.specify/extensions.yml` exists in the project root.
+- If it does not exist, or no hooks are registered under `hooks.after_implement`, skip to the Completion Report.
+- If it exists, read it and look for entries under the `hooks.after_implement` key.
+- If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue to the Completion Report.
+- Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
+- For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
+  - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
+  - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
+- For each executable hook, output the following based on its `optional` flag:
+  - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
+    ```
+    ## Extension Hooks
+
+    **Automatic Hook**: {extension}
+    Executing: `/{command}`
+    EXECUTE_COMMAND: {command}
+    ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
+  - **Optional hook** (`optional: true`):
+    ```
+    ## Extension Hooks
+
+    **Optional Hook**: {extension}
+    Command: `/{command}`
+    Description: {description}
+
+    Prompt: {prompt}
+    To execute: `/{command}`
+    ```
+
+## Completion Report
+
+Report final status with summary of completed work.
+
+## Done When
+
+- [ ] All tasks in tasks.md completed and marked `[X]`
+- [ ] Implementation validated against specification, plan, and test coverage
+- [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
+- [ ] Completion reported to user with summary of completed work
+
+
+---
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:33Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Confirm checklist status
+
+`grep -c '^- \[ \]' specs/001-ticket-management-ui/checklists/requirements.md; grep -c '^- \[x\]' specs/001-ticket-management-ui/checklists/requirements.md`
+
+```text
+0
+16
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:34Z)**_
+
+16/16 pass. Proceeding without prompt. No `.specify/extensions.yml` — hooks skipped.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/pages/TicketDetailPage.tsx`
+
+```text
+1	import { useState } from "react";
+2	import Container from "@mui/material/Container";
+3	import Stack from "@mui/material/Stack";
+4	import Typography from "@mui/material/Typography";
+5	import Divider from "@mui/material/Divider";
+6	import CircularProgress from "@mui/material/CircularProgress";
+7	import Alert from "@mui/material/Alert";
+8	import { useParams } from "react-router-dom";
+9	import { useTicket } from "../hooks/useTicket";
+10	import { useUpdateTicket } from "../hooks/useUpdateTicket";
+11	import { useComments } from "../hooks/useComments";
+12	import { useAddComment } from "../hooks/useAddComment";
+13	import { TicketForm } from "../components/TicketForm/TicketForm";
+14	import { StatusBadge } from "../components/StatusBadge/StatusBadge";
+15	import { StatusTransitionMenu } from "../components/StatusTransitionMenu/StatusTransitionMenu";
+16	import { CommentList } from "../components/CommentList/CommentList";
+17	import { CommentForm } from "../components/CommentForm/CommentForm";
+18	
+19	export function TicketDetailPage() {
+20	  const { ticketId } = useParams<{ ticketId: string }>();
+21	  if (!ticketId) {
+22	    throw new Error("TicketDetailPage rendered without a ticketId param");
+23	  }
+24	
+25	  const { data: ticket, isLoading, isError } = useTicket(ticketId);
+26	  const updateTicket = useUpdateTicket(ticketId);
+27	  const [commentsPage, setCommentsPage] = useState(0);
+28	  const { data: commentPage } = useComments(ticketId, commentsPage);
+29	  const addComment = useAddComment(ticketId);
+30	
+31	  return (
+32	    <Container maxWidth="sm" sx={{ py: 4 }}>
+33	      {isLoading && <CircularProgress aria-label="Loading ticket" />}
+34	
+35	      {isError && (
+36	        <Alert severity="error">
+37	          Unable to load this ticket. Please try again.
+38	        </Alert>
+39	      )}
+40	
+41	      {ticket && (
+42	        <Stack spacing={3}>
+43	          <Stack direction="row" spacing={2} alignItems="center">
+44	            <Typography variant="h4" component="h1">
+45	              {ticket.title}
+46	            </Typography>
+47	            <StatusBadge status={ticket.status} />
+48	          </Stack>
+49	
+50	          <StatusTransitionMenu
+51	            ticketId={ticket.id}
+52	            currentStatus={ticket.status}
+53	          />
+54	
+55	          <TicketForm
+56	            submitLabel="Save Changes"
+57	            initialValues={{
+58	              title: ticket.title,
+59	              description: ticket.description,
+60	              priority: ticket.priority,
+61	              assignee: ticket.assignee ?? "",
+62	            }}
+63	            onSubmit={(values) => updateTicket.mutateAsync(values)}
+64	          />
+65	
+66	          <Divider />
+67	
+68	          <Typography variant="h6" component="h2">
+69	            Comments
+70	          </Typography>
+71	          {commentPage && (
+72	            <CommentList
+73	              commentPage={commentPage}
+74	              onPageChange={setCommentsPage}
+75	            />
+76	          )}
+77	          <CommentForm
+78	            onSubmit={(content) => addComment.mutateAsync({ content })}
+79	          />
+80	        </Stack>
+81	      )}
+82	    </Container>
+83	  );
+84	}
+85
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/pages/TicketCreatePage.tsx`
+
+```text
+1	import Container from "@mui/material/Container";
+2	import Typography from "@mui/material/Typography";
+3	import { useNavigate } from "react-router-dom";
+4	import { TicketForm } from "../components/TicketForm/TicketForm";
+5	import { useCreateTicket } from "../hooks/useCreateTicket";
+6	
+7	export function TicketCreatePage() {
+8	  const navigate = useNavigate();
+9	  const createTicket = useCreateTicket();
+10	
+11	  return (
+12	    <Container maxWidth="sm" sx={{ py: 4 }}>
+13	      <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
+14	        New Ticket
+15	      </Typography>
+16	      <TicketForm
+17	        submitLabel="Create Ticket"
+18	        onSubmit={async (values) => {
+19	          const ticket = await createTicket.mutateAsync(values);
+20	          navigate(`/tickets/${ticket.id}`);
+21	        }}
+22	      />
+23	    </Container>
+24	  );
+25	}
+26
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:37Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/pages/TicketListPage.tsx`
+
+```text
+1	import { useState } from "react";
+2	import Container from "@mui/material/Container";
+3	import Stack from "@mui/material/Stack";
+4	import Typography from "@mui/material/Typography";
+5	import Button from "@mui/material/Button";
+6	import Pagination from "@mui/material/Pagination";
+7	import CircularProgress from "@mui/material/CircularProgress";
+8	import Alert from "@mui/material/Alert";
+9	import { Link as RouterLink } from "react-router-dom";
+10	import { useTickets } from "../hooks/useTickets";
+11	import { TicketList } from "../components/TicketList/TicketList";
+12	import { SearchBar } from "../components/TicketList/SearchBar";
+13	import { StatusFilter } from "../components/TicketList/StatusFilter";
+14	import type { Status } from "../types/ticket";
+15	
+16	export function TicketListPage() {
+17	  const [page, setPage] = useState(0);
+18	  const [q, setQ] = useState("");
+19	  const [status, setStatus] = useState<Status | "">("");
+20	
+21	  const { data, isLoading, isError } = useTickets({
+22	    page,
+23	    q: q || undefined,
+24	    status: status || undefined,
+25	  });
+26	
+27	  const isFiltered = q !== "" || status !== "";
+28	  const isFilteredEmpty = isFiltered && (data?.content.length ?? 0) === 0;
+29	
+30	  function handleSearch(keyword: string) {
+31	    setQ(keyword);
+32	    setPage(0);
+33	  }
+34	
+35	  function handleStatusChange(next: Status | "") {
+36	    setStatus(next);
+37	    setPage(0);
+38	  }
+39	
+40	  return (
+41	    <Container maxWidth="md" sx={{ py: 4 }}>
+42	      <Stack
+43	        direction="row"
+44	        justifyContent="space-between"
+45	        alignItems="center"
+46	        sx={{ mb: 3 }}
+47	      >
+48	        <Typography variant="h4" component="h1">
+49	          Tickets
+50	        </Typography>
+51	        <Button component={RouterLink} to="/tickets/new" variant="contained">
+52	          New Ticket
+53	        </Button>
+54	      </Stack>
+55	
+56	      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+57	        <SearchBar onSearch={handleSearch} />
+58	        <StatusFilter value={status} onChange={handleStatusChange} />
+59	      </Stack>
+60	
+61	      {isLoading && <CircularProgress aria-label="Loading tickets" />}
+62	
+63	      {isError && (
+64	        <Alert severity="error">
+65	          Unable to load tickets. Please try again.
+66	        </Alert>
+67	      )}
+68	
+69	      {data && (
+70	        <>
+71	          <TicketList tickets={data.content} isFilteredEmpty={isFilteredEmpty} />
+72	          {data.totalPages > 1 && (
+73	            <Stack sx={{ mt: 2 }} alignItems="center">
+74	              <Pagination
+75	                count={data.totalPages}
+76	                page={page + 1}
+77	                onChange={(_, value) => setPage(value - 1)}
+78	              />
+79	            </Stack>
+80	          )}
+81	        </>
+82	      )}
+83	    </Container>
+84	  );
+85	}
+86
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:38Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/routes/router.tsx`
+
+```text
+1	import { createBrowserRouter } from "react-router-dom";
+2	import { TicketListPage } from "../pages/TicketListPage";
+3	import { TicketCreatePage } from "../pages/TicketCreatePage";
+4	import { TicketDetailPage } from "../pages/TicketDetailPage";
+5	
+6	export const router = createBrowserRouter([
+7	  { path: "/", element: <TicketListPage /> },
+8	  { path: "/tickets/new", element: <TicketCreatePage /> },
+9	  { path: "/tickets/:ticketId", element: <TicketDetailPage /> },
+10	]);
+11
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:39Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./src/components/TicketForm/TicketForm.tsx`
+
+```text
+1	import { useState, type FormEvent } from "react";
+2	import Stack from "@mui/material/Stack";
+3	import TextField from "@mui/material/TextField";
+4	import MenuItem from "@mui/material/MenuItem";
+5	import Button from "@mui/material/Button";
+6	import Alert from "@mui/material/Alert";
+7	import { PRIORITIES, type Priority } from "../../types/ticket";
+8	import { KNOWN_ASSIGNEES } from "../../config/assignees";
+9	import { HttpError } from "../../api/http";
+10	import { mapFieldErrors } from "../../utils/mapFieldErrors";
+11	import type { TicketCreateRequest } from "../../types/requests";
+12	
+13	const KNOWN_FIELDS = ["title", "description", "priority", "assignee"] as const;
+14	
+15	export interface TicketFormValues {
+16	  title: string;
+17	  description: string;
+18	  priority: Priority | "";
+19	  assignee: string;
+20	}
+21	
+22	const EMPTY_VALUES: TicketFormValues = {
+23	  title: "",
+24	  description: "",
+25	  priority: "",
+26	  assignee: "",
+27	};
+28	
+29	export interface TicketFormProps {
+30	  onSubmit: (values: TicketCreateRequest) => Promise<unknown>;
+31	  submitLabel?: string;
+32	  /** Pre-fills the form for editing an existing ticket (US2). */
+33	  initialValues?: TicketFormValues;
+34	}
+35	
+36	export function TicketForm({
+37	  onSubmit,
+38	  submitLabel = "Create Ticket",
+39	  initialValues,
+40	}: TicketFormProps) {
+41	  const [values, setValues] = useState<TicketFormValues>(
+42	    initialValues ?? EMPTY_VALUES,
+43	  );
+44	  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+45	  const [generalErrors, setGeneralErrors] = useState<string[]>([]);
+46	  const [submitting, setSubmitting] = useState(false);
+47	
+48	  function validate(): Record<string, string> {
+49	    const errors: Record<string, string> = {};
+50	    if (values.title.trim() === "") {
+51	      errors.title = "Title is required.";
+52	    }
+53	    if (values.description.trim() === "") {
+54	      errors.description = "Description is required.";
+55	    }
+56	    if (values.priority === "") {
+57	      errors.priority = "Priority is required.";
+58	    }
+59	    return errors;
+60	  }
+61	
+62	  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+63	    event.preventDefault();
+64	    setGeneralErrors([]);
+65	
+66	    const clientErrors = validate();
+67	    setFieldErrors(clientErrors);
+68	    if (Object.keys(clientErrors).length > 0) {
+69	      return;
+70	    }
+71	
+72	    setSubmitting(true);
+73	    try {
+74	      await onSubmit({
+75	        title: values.title,
+76	        description: values.description,
+77	        priority: values.priority as Priority,
+78	        assignee: values.assignee || undefined,
+79	      });
+80	      if (!initialValues) {
+81	        setValues(EMPTY_VALUES);
+82	      }
+83	      setFieldErrors({});
+84	    } catch (error) {
+85	      if (error instanceof HttpError) {
+86	        const mapped = mapFieldErrors(error.apiError, KNOWN_FIELDS);
+87	        setFieldErrors(mapped.fieldErrors);
+88	        setGeneralErrors(mapped.generalErrors);
+89	      } else {
+90	        setGeneralErrors(["Unable to reach the server. Please try again."]);
+91	      }
+92	    } finally {
+93	      setSubmitting(false);
+94	    }
+95	  }
+96	
+97	  return (
+98	    <Stack
+99	      component="form"
+100	      onSubmit={handleSubmit}
+101	      noValidate
+102	      spacing={2}
+103	      sx={{ maxWidth: 480 }}
+104	    >
+105	      {generalErrors.map((message) => (
+106	        <Alert severity="error" key={message}>
+107	          {message}
+108	        </Alert>
+109	      ))}
+110	
+111	      <TextField
+112	        label="Title"
+113	        required
+114	        value={values.title}
+115	        onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
+116	        error={Boolean(fieldErrors.title)}
+117	        helperText={fieldErrors.title}
+118	        slotProps={{ htmlInput: { maxLength: 200 } }}
+119	      />
+120	
+121	      <TextField
+122	        label="Description"
+123	        required
+124	        multiline
+125	        minRows={3}
+126	        value={values.description}
+127	        onChange={(e) =>
+128	          setValues((v) => ({ ...v, description: e.target.value }))
+129	        }
+130	        error={Boolean(fieldErrors.description)}
+131	        helperText={fieldErrors.description}
+132	      />
+133	
+134	      <TextField
+135	        select
+136	        label="Priority"
+137	        required
+138	        value={values.priority}
+139	        onChange={(e) =>
+140	          setValues((v) => ({
+141	            ...v,
+142	            priority: e.target.value as Priority,
+143	          }))
+144	        }
+145	        error={Boolean(fieldErrors.priority)}
+146	        helperText={fieldErrors.priority}
+147	      >
+148	        {PRIORITIES.map((priority) => (
+149	          <MenuItem key={priority} value={priority}>
+150	            {priority}
+151	          </MenuItem>
+152	        ))}
+153	      </TextField>
+154	
+155	      <TextField
+156	        select
+157	        label="Assignee"
+158	        value={values.assignee}
+159	        onChange={(e) =>
+160	          setValues((v) => ({ ...v, assignee: e.target.value }))
+161	        }
+162	        error={Boolean(fieldErrors.assignee)}
+163	        helperText={fieldErrors.assignee ?? "Optional — leave unassigned"}
+164	      >
+165	        <MenuItem value="">Unassigned</MenuItem>
+166	        {KNOWN_ASSIGNEES.map((assignee) => (
+167	          <MenuItem key={assignee} value={assignee}>
+168	            {assignee}
+169	          </MenuItem>
+170	        ))}
+171	      </TextField>
+172	
+173	      <Button type="submit" variant="contained" disabled={submitting}>
+174	        {submitLabel}
+175	      </Button>
+176	    </Stack>
+177	  );
+178	}
+179
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:40Z)**_
+
+**T044**: Breadcrumbs component.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:44Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```typescript
+import MuiBreadcrumbs from "@mui/material/Breadcrumbs";
+import Link from "@mui/material/Link";
+import Typography from "@mui/material/Typography";
+import { Link as RouterLink } from "react-router-dom";
+
+export interface BreadcrumbSegment {
+  label: string;
+  to?: string;
+}
+
+export interface BreadcrumbsProps {
+  segments: BreadcrumbSegment[];
+}
+
+export function Breadcrumbs({ segments }: BreadcrumbsProps) {
+  return (
+    <MuiBreadcrumbs aria-label="breadcrumb" sx={{ mb: 3 }}>
+      {segments.map((segment, index) =>
+        segment.to ? (
+          <Link
+            key={index}
+            component={RouterLink}
+            to={segment.to}
+            underline="hover"
+            color="inherit"
+          >
+            {segment.label}
+          </Link>
+        ) : (
+          <Typography key={index} color="text.primary">
+            {segment.label}
+          </Typography>
+        ),
+      )}
+    </MuiBreadcrumbs>
+  );
+}
+
+```
+
+```text
+File created successfully at: /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/components/Breadcrumbs/Breadcrumbs.tsx (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:46Z)**_
+
+**T045**: `TicketEditPage`.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:52Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```typescript
+import Container from "@mui/material/Container";
+import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
+import { useNavigate, useParams } from "react-router-dom";
+import { useTicket } from "../hooks/useTicket";
+import { useUpdateTicket } from "../hooks/useUpdateTicket";
+import { TicketForm } from "../components/TicketForm/TicketForm";
+import { Breadcrumbs } from "../components/Breadcrumbs/Breadcrumbs";
+
+export function TicketEditPage() {
+  const { ticketId } = useParams<{ ticketId: string }>();
+  if (!ticketId) {
+    throw new Error("TicketEditPage rendered without a ticketId param");
+  }
+
+  const navigate = useNavigate();
+  const { data: ticket, isLoading, isError } = useTicket(ticketId);
+  const updateTicket = useUpdateTicket(ticketId);
+
+  return (
+    <Container maxWidth="sm" sx={{ py: 4 }}>
+      <Breadcrumbs
+        segments={[
+          { label: "Tickets", to: "/" },
+          { label: ticket?.title ?? "Ticket", to: `/tickets/${ticketId}` },
+          { label: "Edit" },
+        ]}
+      />
+
+      {isLoading && <CircularProgress aria-label="Loading ticket" />}
+
+      {isError && (
+        <Alert severity="error">
+          Unable to load this ticket. Please try again.
+        </Alert>
+      )}
+
+      {ticket && (
+        <>
+          <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
+            Edit Ticket
+          </Typography>
+          <TicketForm
+            submitLabel="Save Changes"
+            initialValues={{
+              title: ticket.title,
+              description: ticket.description,
+              priority: ticket.priority,
+              assignee: ticket.assignee ?? "",
+            }}
+            onSubmit={async (values) => {
+              await updateTicket.mutateAsync(values);
+              navigate(`/tickets/${ticketId}`);
+            }}
+          />
+        </>
+      )}
+    </Container>
+  );
+}
+
+```
+
+```text
+File created successfully at: /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/pages/TicketEditPage.tsx (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:16:55Z)**_
+
+**T046**: simplify `TicketDetailPage` to read-only + Edit link + breadcrumbs.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:04Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```typescript
+import { useState } from "react";
+import Container from "@mui/material/Container";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
+import { Link as RouterLink, useParams } from "react-router-dom";
+import { useTicket } from "../hooks/useTicket";
+import { useComments } from "../hooks/useComments";
+import { useAddComment } from "../hooks/useAddComment";
+import { StatusBadge } from "../components/StatusBadge/StatusBadge";
+import { PriorityBadge } from "../components/PriorityBadge/PriorityBadge";
+import { StatusTransitionMenu } from "../components/StatusTransitionMenu/StatusTransitionMenu";
+import { CommentList } from "../components/CommentList/CommentList";
+import { CommentForm } from "../components/CommentForm/CommentForm";
+import { Breadcrumbs } from "../components/Breadcrumbs/Breadcrumbs";
+
+export function TicketDetailPage() {
+  const { ticketId } = useParams<{ ticketId: string }>();
+  if (!ticketId) {
+    throw new Error("TicketDetailPage rendered without a ticketId param");
+  }
+
+  const { data: ticket, isLoading, isError } = useTicket(ticketId);
+  const [commentsPage, setCommentsPage] = useState(0);
+  const { data: commentPage } = useComments(ticketId, commentsPage);
+  const addComment = useAddComment(ticketId);
+
+  return (
+    <Container maxWidth="sm" sx={{ py: 4 }}>
+      <Breadcrumbs
+        segments={[
+          { label: "Tickets", to: "/" },
+          { label: ticket?.title ?? "Ticket" },
+        ]}
+      />
+
+      {isLoading && <CircularProgress aria-label="Loading ticket" />}
+
+      {isError && (
+        <Alert severity="error">
+          Unable to load this ticket. Please try again.
+        </Alert>
+      )}
+
+      {ticket && (
+        <Stack spacing={3}>
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Typography variant="h4" component="h1">
+                {ticket.title}
+              </Typography>
+              <StatusBadge status={ticket.status} />
+            </Stack>
+            <Button
+              component={RouterLink}
+              to={`/tickets/${ticketId}/edit`}
+              variant="outlined"
+            >
+              Edit
+            </Button>
+          </Stack>
+
+          <Stack spacing={1}>
+            <Typography variant="body1">{ticket.description}</Typography>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <PriorityBadge priority={ticket.priority} />
+              <Typography variant="body2" color="text.secondary">
+                Assignee: {ticket.assignee ?? "Unassigned"}
+              </Typography>
+            </Stack>
+          </Stack>
+
+          <StatusTransitionMenu
+            ticketId={ticket.id}
+            currentStatus={ticket.status}
+          />
+
+          <Divider />
+
+          <Typography variant="h6" component="h2">
+            Comments
+          </Typography>
+          {commentPage && (
+            <CommentList
+              commentPage={commentPage}
+              onPageChange={setCommentsPage}
+            />
+          )}
+          <CommentForm
+            onSubmit={(content) => addComment.mutateAsync({ content })}
+          />
+        </Stack>
+      )}
+    </Container>
+  );
+}
+
+```
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/pages/TicketDetailPage.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:05Z)**_
+
+**T047**: route for `TicketEditPage`.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:10Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/routes/router.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:12Z)**_
+
+**T048**: "View" action per row in `TicketList`.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:15Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/components/TicketList/TicketList.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:21Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/components/TicketList/TicketList.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:23Z)**_
+
+**T049/T050**: breadcrumbs on `TicketListPage` and `TicketCreatePage`.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:26Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/pages/TicketListPage.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:30Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/pages/TicketListPage.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/src/pages/TicketCreatePage.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:49Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Typecheck after structural changes
+
+`npx tsc --noEmit 2>&1 | head -100`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:17:51Z)**_
+
+Typecheck clean. Now **T051/T052**: new navigation-flow tests.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:00Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```typescript
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { TicketListPage } from "../../src/pages/TicketListPage";
+import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
+import { TicketEditPage } from "../../src/pages/TicketEditPage";
+import { resetTicketStore } from "../msw/handlers";
+import type { Ticket } from "../../src/types/ticket";
+
+function seedTicket(): Ticket {
+  const now = new Date().toISOString();
+  const ticket: Ticket = {
+    id: "1",
+    title: "Monitor flickering",
+    description: "External monitor flickers intermittently.",
+    priority: "MEDIUM",
+    status: "OPEN",
+    createdAt: now,
+    updatedAt: now,
+  };
+  resetTicketStore([ticket]);
+  return ticket;
+}
+
+function renderApp(initialPath = "/") {
+  const queryClient = new QueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/" element={<TicketListPage />} />
+          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+          <Route
+            path="/tickets/:ticketId/edit"
+            element={<TicketEditPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe("View and edit navigation", () => {
+  it("navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017)", async () => {
+    seedTicket();
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(await screen.findByRole("button", { name: /view/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Monitor flickering" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/^title$/i),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: /^edit$/i }));
+
+    expect(await screen.findByLabelText(/^title$/i)).toHaveValue(
+      "Monitor flickering",
+    );
+  });
+
+  it("saving the edit page returns to the detail page with updated values and correct breadcrumbs (FR-004, FR-019, FR-020)", async () => {
+    seedTicket();
+    const user = userEvent.setup();
+    renderApp("/tickets/1/edit");
+
+    expect(
+      await screen.findByText("Tickets / Monitor flickering / Edit", {
+        exact: false,
+        selector: "nav",
+      }),
+    ).toBeInTheDocument();
+
+    const titleField = await screen.findByLabelText(/^title$/i);
+    await user.clear(titleField);
+    await user.type(titleField, "Monitor flickering badly");
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Monitor flickering badly" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /save changes/i })).not.toBeInTheDocument();
+  });
+});
+
+```
+
+```text
+File created successfully at: /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/tests/integration/view-edit-navigation.test.tsx (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:07Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/tests/integration/view-edit-navigation.test.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:10Z)**_
+
+**T053**: update `update-ticket.test.tsx` to route through the Edit page.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:11Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./tests/integration/update-ticket.test.tsx`
+
+```text
+1	import { describe, it, expect } from "vitest";
+2	import { render, screen } from "@testing-library/react";
+3	import userEvent from "@testing-library/user-event";
+4	import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+5	import { MemoryRouter, Route, Routes } from "react-router-dom";
+6	import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
+7	import { resetTicketStore } from "../msw/handlers";
+8	import type { Ticket } from "../../src/types/ticket";
+9	
+10	function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
+11	  const now = new Date().toISOString();
+12	  const ticket: Ticket = {
+13	    id: "1",
+14	    title: "Laptop won't boot",
+15	    description: "Black screen on power-on.",
+16	    priority: "MEDIUM",
+17	    status: "OPEN",
+18	    assignee: undefined,
+19	    createdAt: now,
+20	    updatedAt: now,
+21	    ...overrides,
+22	  };
+23	  resetTicketStore([ticket]);
+24	  return ticket;
+25	}
+26	
+27	function renderDetail(ticketId = "1") {
+28	  const queryClient = new QueryClient();
+29	  return render(
+30	    <QueryClientProvider client={queryClient}>
+31	      <MemoryRouter initialEntries={[`/tickets/${ticketId}`]}>
+32	        <Routes>
+33	          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+34	        </Routes>
+35	      </MemoryRouter>
+36	    </QueryClientProvider>,
+37	  );
+38	}
+39	
+40	describe("Update ticket", () => {
+41	  it("updates title/description/priority/assignee and reflects them immediately (FR-004)", async () => {
+42	    seedTicket();
+43	    const user = userEvent.setup();
+44	    renderDetail();
+45	
+46	    const priorityField = await screen.findByLabelText(/priority/i);
+47	    await user.click(priorityField);
+48	    await user.click(await screen.findByRole("option", { name: "HIGH" }));
+49	
+50	    const assigneeField = screen.getByLabelText(/assignee/i);
+51	    await user.click(assigneeField);
+52	    await user.click(await screen.findByRole("option", { name: "Alice Chen" }));
+53	
+54	    await user.click(screen.getByRole("button", { name: /save changes/i }));
+55	
+56	    expect(await screen.findByDisplayValue("HIGH")).toBeInTheDocument();
+57	    expect(screen.getByDisplayValue("Alice Chen")).toBeInTheDocument();
+58	  });
+59	
+60	  it("blocks an empty-title save and preserves the edit rather than discarding it (FR-013)", async () => {
+61	    seedTicket();
+62	    const user = userEvent.setup();
+63	    renderDetail();
+64	
+65	    const titleField = await screen.findByLabelText(/title/i);
+66	    await user.clear(titleField);
+67	    await user.click(screen.getByRole("button", { name: /save changes/i }));
+68	
+69	    expect(
+70	      await screen.findByText(/title is required/i),
+71	    ).toBeInTheDocument();
+72	    expect(titleField).toHaveValue("");
+73	  });
+74	});
+75
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:23Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```typescript
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
+import { TicketEditPage } from "../../src/pages/TicketEditPage";
+import { resetTicketStore } from "../msw/handlers";
+import type { Ticket } from "../../src/types/ticket";
+
+function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
+  const now = new Date().toISOString();
+  const ticket: Ticket = {
+    id: "1",
+    title: "Laptop won't boot",
+    description: "Black screen on power-on.",
+    priority: "MEDIUM",
+    status: "OPEN",
+    assignee: undefined,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+  resetTicketStore([ticket]);
+  return ticket;
+}
+
+function renderEdit(ticketId = "1") {
+  const queryClient = new QueryClient();
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[`/tickets/${ticketId}/edit`]}>
+        <Routes>
+          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+          <Route
+            path="/tickets/:ticketId/edit"
+            element={<TicketEditPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe("Update ticket", () => {
+  it("updates title/description/priority/assignee and returns to the read-only detail page with the change reflected (FR-004, FR-019)", async () => {
+    seedTicket();
+    const user = userEvent.setup();
+    renderEdit();
+
+    const priorityField = await screen.findByLabelText(/priority/i);
+    await user.click(priorityField);
+    await user.click(await screen.findByRole("option", { name: "HIGH" }));
+
+    const assigneeField = screen.getByLabelText(/assignee/i);
+    await user.click(assigneeField);
+    await user.click(await screen.findByRole("option", { name: "Alice Chen" }));
+
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Laptop won't boot" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("HIGH")).toBeInTheDocument();
+    expect(screen.getByText(/assignee: alice chen/i)).toBeInTheDocument();
+  });
+
+  it("blocks an empty-title save and preserves the edit rather than discarding it or navigating away (FR-013)", async () => {
+    seedTicket();
+    const user = userEvent.setup();
+    renderEdit();
+
+    const titleField = await screen.findByLabelText(/title/i);
+    await user.clear(titleField);
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    expect(
+      await screen.findByText(/title is required/i),
+    ).toBeInTheDocument();
+    expect(titleField).toHaveValue("");
+    expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+  });
+});
+
+```
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/tests/integration/update-ticket.test.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:35Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Typecheck after test updates
+
+`npx tsc --noEmit 2>&1 | head -100`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:43Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run eslint
+
+`npx eslint . 2>&1 | tail -80`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:45Z)**_
+
+Clean. Now run full test suite.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:18:57Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run full vitest suite
+
+`npx vitest run 2>&1 | tail -250`
+
+```text
+        <h1
+          class="MuiTypography-root MuiTypography-h4 css-f84ov1-MuiTypography-root"
+        >
+          Tickets
+        </h1>
+        <a
+          class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary css-74d805-MuiButtonBase-root-MuiButton-root"
+          href="/tickets/new"
+          tabindex="0"
+        >
+          New Ticket
+        </a>
+      </div>
+      <div
+        class="MuiStack-root css-4ovjqy-MuiStack-root"
+      >
+        <div
+          class="MuiFormControl-root MuiTextField-root css-e1abbb-MuiFormControl-root-MuiTextField-root"
+        >
+          <label
+            class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeSmall MuiInputLabel-outlined MuiFormLabel-colorPrimary MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeSmall MuiInputLabel-outlined css-1kfabtt-MuiFormLabel-root-MuiInputLabel-root"
+            data-shrink="false"
+            for=":r1:"
+            id=":r1:-label"
+          >
+            Search tickets
+          </label>
+          <div
+            class="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl MuiInputBase-sizeSmall css-quhxjy-MuiInputBase-root-MuiOutlinedInput-root"
+          >
+            <input
+              aria-invalid="false"
+              class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall css-1pzfmz2-MuiInputBase-input-MuiOutlinedInput-input"
+              id=":r1:"
+              placeholder="Search by title or description"
+              type="text"
+              value=""
+            />
+            <fieldset
+              aria-hidden="true"
+              class="MuiOutlinedInput-notchedOutline css-18p5xg2-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline"
+            >
+              <legend
+                class="css-1n64csd-MuiNotchedOutlined-root"
+              >
+                <span>
+                  Search tickets
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+        <div
+          class="MuiFormControl-root MuiTextField-root css-1ovfe1o-MuiFormControl-root-MuiTextField-root"
+        >
+          <label
+            class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeSmall MuiInputLabel-outlined MuiFormLabel-colorPrimary MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-sizeSmall MuiInputLabel-outlined css-1kfabtt-MuiFormLabel-root-MuiInputLabel-root"
+            data-shrink="false"
+            for=":r2:"
+            id=":r2:-label"
+          >
+            Status
+          </label>
+          <div
+            class="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl MuiInputBase-sizeSmall MuiSelect-root css-quhxjy-MuiInputBase-root-MuiOutlinedInput-root"
+          >
+            <div
+              aria-expanded="false"
+              aria-haspopup="listbox"
+              aria-labelledby=":r2:-label :r2:"
+              class="MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputSizeSmall css-trm6af-MuiNativeSelect-root-MuiSelect-select-MuiInputBase-input-MuiOutlinedInput-input"
+              id=":r2:"
+              role="combobox"
+              tabindex="0"
+            >
+              <span
+                aria-hidden="true"
+                class="notranslate"
+              >
+                ​
+              </span>
+            </div>
+            <input
+              aria-hidden="true"
+              aria-invalid="false"
+              class="MuiSelect-nativeInput css-j0riat-MuiSelect-nativeInput"
+              tabindex="-1"
+              value=""
+            />
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium MuiSelect-icon MuiSelect-iconOutlined css-1rfqz7c-MuiSvgIcon-root-MuiNativeSelect-root-MuiSelect-icon"
+              data-testid="ArrowDropDownIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M7 10l5 5 5-5z"
+              />
+            </svg>
+            <fieldset
+              aria-hidden="true"
+              class="MuiOutlinedInput-notchedOutline css-18p5xg2-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline"
+            >
+              <legend
+                class="css-1n64csd-MuiNotchedOutlined-root"
+              >
+                <span>
+                  Status
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+      <table
+        aria-label="Ticket list"
+        class="MuiTable-root css-1xwxv7r-MuiTable-root"
+      >
+        <thead
+          class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
+        >
+          <tr
+            class="MuiTableRow-root MuiTableRow-head css-1xtozoh-MuiTableRow-root"
+          >
+            <th
+              class="MuiTableCell-root MuiTableCell-head MuiTableCell-sizeMedium css-1orzuox-MuiTableCell-root"
+              scope="col"
+            >
+              Title
+            </th>
+            <th
+              class="MuiTableCell-root MuiTableCell-head MuiTableCell-sizeMedium css-1orzuox-MuiTableCell-root"
+              scope="col"
+            >
+              Status
+            </th>
+            <th
+              class="MuiTableCell-root MuiTableCell-head MuiTableCell-sizeMedium css-1orzuox-MuiTableCell-root"
+              scope="col"
+            >
+              Priority
+            </th>
+            <th
+              class="MuiTableCell-root MuiTableCell-head MuiTableCell-sizeMedium css-1orzuox-MuiTableCell-root"
+              scope="col"
+            >
+              Assignee
+            </th>
+            <th
+              class="MuiTableCell-root MuiTableCell-head MuiTableCell-sizeMedium css-1orzuox-MuiTableCell-root"
+              scope="col"
+            />
+          </tr>
+        </thead>
+        <tbody
+          class="MuiTableBody-root css-gmh7jj-MuiTableBody-root"
+        >
+          <tr
+            class="MuiTableRow-root css-1xtozoh-MuiTableRow-root"
+          >
+            <td
+              class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeMedium css-1dc80h3-MuiTableCell-root"
+            >
+              Monitor flickering
+            </td>
+            <td
+              class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeMedium css-1dc80h3-MuiTableCell-root"
+            >
+              <div
+                aria-label="Status: Open"
+                class="MuiChip-root MuiChip-filled MuiChip-sizeSmall MuiChip-colorInfo MuiChip-filledInfo css-16lfvse-MuiChip-root"
+              >
+                <span
+                  class="MuiChip-label MuiChip-labelSmall css-eccknh-MuiChip-label"
+                >
+                  Open
+                </span>
+              </div>
+            </td>
+            <td
+              class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeMedium css-1dc80h3-MuiTableCell-root"
+            >
+              <div
+                aria-label="Priority: MEDIUM"
+                class="MuiChip-root MuiChip-outlined MuiChip-sizeSmall MuiChip-colorInfo MuiChip-outlinedInfo css-1amo3yg-MuiChip-root"
+              >
+                <span
+                  class="MuiChip-label MuiChip-labelSmall css-19m61dl-MuiChip-label"
+                >
+                  MEDIUM
+                </span>
+              </div>
+            </td>
+            <td
+              class="MuiTableCell-root MuiTableCell-body MuiTableCell-sizeMedium css-1dc80h3-MuiTableCell-root"
+            >
+              Unassigned
+            </td>
+            <td
+              class="MuiTableCell-root MuiTableCell-body MuiTableCell-alignRight MuiTableCell-sizeMedium css-3ssuu9-MuiTableCell-root"
+            >
+              <a
+                class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary css-1ccsd5i-MuiButtonBase-root-MuiButton-root"
+                href="/tickets/1"
+                tabindex="0"
+              >
+                View
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ tests/integration/view-edit-navigation.test.tsx:51:35
+     49|     renderApp();
+     50| 
+     51|     await user.click(await screen.findByRole("button", { name: /view/i…
+       |                                   ^
+     52| 
+     53|     expect(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/integration/view-edit-navigation.test.tsx > View and edit navigation > saving the edit page returns to the detail page with updated values and correct breadcrumbs (FR-004, FR-019, FR-020)
+Error: expect(element).toHaveTextContent()
+
+Expected element to have text content:
+  Monitor flickering
+Received:
+  Tickets/Ticket/Edit
+ ❯ tests/integration/view-edit-navigation.test.tsx:76:27
+     74|     });
+     75|     expect(breadcrumbNav).toHaveTextContent("Tickets");
+     76|     expect(breadcrumbNav).toHaveTextContent("Monitor flickering");
+       |                           ^
+     77|     expect(breadcrumbNav).toHaveTextContent("Edit");
+     78| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+ Test Files  2 failed | 5 passed (7)
+      Tests  3 failed | 14 passed (17)
+   Start at  19:48:49
+   Duration  8.07s (transform 686ms, setup 4.71s, collect 15.19s, tests 10.53s, environment 7.94s, prepare 914ms)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:19:06Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/tests/integration/view-edit-navigation.test.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:19:12Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/tests/integration/view-edit-navigation.test.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:19:27Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Re-run the two updated/new test files
+
+`npx vitest run tests/integration/view-edit-navigation.test.tsx tests/integration/update-ticket.test.tsx 2>&1 | tail -150`
+
+```text
+    >
+      <nav
+        aria-label="breadcrumb"
+        class="MuiTypography-root MuiTypography-body1 MuiBreadcrumbs-root css-1hn1sqx-MuiTypography-root-MuiBreadcrumbs-root"
+      >
+        <ol
+          class="MuiBreadcrumbs-ol css-1uwp4ue-MuiBreadcrumbs-ol"
+        >
+          <li
+            class="MuiBreadcrumbs-li"
+          >
+            <a
+              class="MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover css-nv1n36-MuiTypography-root-MuiLink-root"
+              href="/"
+            >
+              Tickets
+            </a>
+          </li>
+          <li
+            aria-hidden="true"
+            class="MuiBreadcrumbs-separator css-jhr02i-MuiBreadcrumbs-separator"
+          >
+            /
+          </li>
+          <li
+            class="MuiBreadcrumbs-li"
+          >
+            <a
+              class="MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover css-nv1n36-MuiTypography-root-MuiLink-root"
+              href="/tickets/1"
+            >
+              Monitor flickering
+            </a>
+          </li>
+          <li
+            aria-hidden="true"
+            class="MuiBreadcrumbs-separator css-jhr02i-MuiBreadcrumbs-separator"
+          >
+            /
+          </li>
+          <li
+            class="MuiBreadcrumbs-li"
+          >
+            <p
+              class="MuiTypography-root MuiTypography-body1 css-4leci6-MuiTypography-root"
+            >
+              Edit
+            </p>
+          </li>
+        </ol>
+      </nav>
+      <h1
+        class="MuiTypography-root MuiTypography-h4 css-10jnrrx-MuiTypography-root"
+      >
+        Edit Ticket
+      </h1>
+      <form
+        class="MuiStack-root css-num6u3-MuiStack-root"
+        novalidate=""
+      >
+        <div
+          class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+        >
+          <label
+            class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-shrink MuiInputLabel-sizeMedium MuiInputLabel-outlined MuiFormLabel-colorPrimary MuiFormLabel-filled Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-shrink MuiInputLabel-sizeMedium MuiInputLabel-outlined css-113d811-MuiFormLabel-root-MuiInputLabel-root"
+            data-shrink="true"
+            for=":rg:"
+            id=":rg:-label"
+          >
+            Title
+            <span
+              aria-hidden="true"
+              class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+            >
+               
+              *
+            </span>
+          </label>
+          <div
+            class="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-quhxjy-MuiInputBase-root-MuiOutlinedInput-root"
+          >
+            <input
+              aria-invalid="false"
+              class="MuiInputBase-input MuiOutlinedInput-input css-16wblaj-MuiInputBase-input-MuiOutlinedInput-input"
+              id=":rg:"
+              maxlength="200"
+              required=""
+              type="text"
+              value="Monitor flickering"
+            />
+            <fieldset
+              aria-hidden="true"
+              class="MuiOutlinedInput-notchedOutline css-18p5xg2-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline"
+            >
+              <legend
+                class="css-ex8a5f-MuiNotchedOutlined-root"
+              >
+                <span>
+                  Title
+                   
+                  *
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+        <div
+          class="MuiFormControl-root MuiTextField-root css-1xp5r68-MuiFormControl-root-MuiTextField-root"
+        >
+          <label
+            class="MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-shrink MuiInputLabel-sizeMedium MuiInputLabel-outlined MuiFormLabel-colorPrimary MuiFormLabel-filled Mui-required MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-shrink MuiInputLabel-sizeMedium MuiInputLabel-outlined css-113d811-MuiFormLabel-root-MuiInputLabel-root"
+            data-shrink="true"
+            for=":rh:"
+            id=":rh:-label"
+          >
+            Description
+            <span
+              aria-hidden="true"
+              class="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+            >
+               
+              *
+            </span>
+          </label>
+          <div
+            class="MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl MuiInputBase-multiline css-xrmkj5-MuiInputBase-root-MuiOutlinedInput-root"
+          >
+            <textarea
+              aria-invalid="false"
+              class="MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputMultiline css-w4nesw-MuiInputBase-input-MuiOutlinedInput-input"
+              id=":rh:"
+              required=""
+              styl...
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ tests/integration/view-edit-navigation.test.tsx:72:37
+     70|     renderApp("/tickets/1/edit");
+     71| 
+     72|     const titleField = await screen.findByLabelText(/^title$/i);
+       |                                     ^
+     73| 
+     74|     const breadcrumbNav = screen.getByRole("navigation", {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 2 passed (4)
+   Start at  19:49:21
+   Duration  6.21s (transform 580ms, setup 1.05s, collect 3.59s, tests 3.42s, environment 1.64s, prepare 248ms)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:19:50Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Get concise pass/fail summary
+
+`npx vitest run tests/integration/view-edit-navigation.test.tsx tests/integration/update-ticket.test.tsx --reporter=verbose 2>&1 | grep -E "✓|✗|×|PASS|FAIL" `
+
+```text
+ ✓ tests/integration/update-ticket.test.tsx > Update ticket > updates title/description/priority/assignee and returns to the read-only detail page with the change reflected (FR-004, FR-019) 714ms
+ ✓ tests/integration/update-ticket.test.tsx > Update ticket > blocks an empty-title save and preserves the edit rather than discarding it or navigating away (FR-013)
+ × tests/integration/view-edit-navigation.test.tsx > View and edit navigation > navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017) 1548ms
+ × tests/integration/view-edit-navigation.test.tsx > View and edit navigation > saving the edit page returns to the detail page with updated values and correct breadcrumbs (FR-004, FR-019, FR-020) 1017ms
+ FAIL  tests/integration/view-edit-navigation.test.tsx > View and edit navigation > navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017)
+ FAIL  tests/integration/view-edit-navigation.test.tsx > View and edit navigation > saving the edit page returns to the detail page with updated values and correct breadcrumbs (FR-004, FR-019, FR-020)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:19:58Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find anchored title regex occurrences
+
+`grep -n "\^title\$" tests/integration/view-edit-navigation.test.tsx`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:01Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find title regex occurrences
+
+`grep -n 'title' tests/integration/view-edit-navigation.test.tsx`
+
+```text
+16:    title: "Monitor flickering",
+57:      screen.queryByLabelText(/^title$/i),
+62:    expect(await screen.findByLabelText(/^title$/i)).toHaveValue(
+72:    const titleField = await screen.findByLabelText(/^title$/i);
+81:    await user.clear(titleField);
+82:    await user.type(titleField, "Monitor flickering badly");
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Replace anchored title regex with prefix-anchored version
+
+`sed -i 's|/\^title\$/i|/^title/i|g' tests/integration/view-edit-navigation.test.tsx && grep -n 'title' tests/integration/view-edit-navigation.test.tsx`
+
+```text
+16:    title: "Monitor flickering",
+57:      screen.queryByLabelText(/^title/i),
+62:    expect(await screen.findByLabelText(/^title/i)).toHaveValue(
+72:    const titleField = await screen.findByLabelText(/^title/i);
+81:    await user.clear(titleField);
+82:    await user.type(titleField, "Monitor flickering badly");
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Re-run view-edit-navigation tests
+
+`npx vitest run tests/integration/view-edit-navigation.test.tsx --reporter=verbose 2>&1 | tail -100`
+
+```text
+ RUN  v2.1.9 /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui
+
+stderr | tests/integration/view-edit-navigation.test.tsx > View and edit navigation > navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017)
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ tests/integration/view-edit-navigation.test.tsx > View and edit navigation > navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017) 505ms
+ ✓ tests/integration/view-edit-navigation.test.tsx > View and edit navigation > saving the edit page returns to the detail page with updated values and correct breadcrumbs (FR-004, FR-019, FR-020) 582ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:50:13
+   Duration  5.53s (transform 519ms, setup 682ms, collect 2.48s, tests 1.09s, environment 785ms, prepare 133ms)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:21Z)**_
+
+Both pass. Now run the complete suite.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:32Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run full test suite, concise output
+
+`npx vitest run --reporter=verbose 2>&1 | grep -E "✓|×|Test Files|Tests " `
+
+```text
+ ✓ tests/integration/ticket-list.test.tsx > Ticket list > shows title, status, priority, and assignee for each ticket (FR-002)
+ ✓ tests/integration/ticket-list.test.tsx > Ticket list > shows a distinct empty-list state when there are no tickets (FR-015)
+ ✓ tests/integration/view-edit-navigation.test.tsx > View and edit navigation > navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017) 602ms
+ ✓ tests/integration/invalid-transition.test.tsx > Status transitions > rejects a transition the backend no longer allows and keeps the displayed status unchanged (FR-010, FR-011) 596ms
+ ✓ tests/integration/search-filter.test.tsx > Search and filter tickets > narrows the list to tickets matching a keyword in title or description (FR-007) 863ms
+ ✓ tests/integration/invalid-transition.test.tsx > Status transitions > accepts a valid transition and displays the new status (FR-010)
+ ✓ tests/integration/update-ticket.test.tsx > Update ticket > updates title/description/priority/assignee and returns to the read-only detail page with the change reflected (FR-004, FR-019) 783ms
+ ✓ tests/integration/update-ticket.test.tsx > Update ticket > blocks an empty-title save and preserves the edit rather than discarding it or navigating away (FR-013)
+ ✓ tests/integration/search-filter.test.tsx > Search and filter tickets > narrows the list to tickets in the selected status (FR-008) 380ms
+ ✓ tests/integration/view-edit-navigation.test.tsx > View and edit navigation > saving the edit page returns to the detail page with updated values and correct breadcrumbs (FR-004, FR-019, FR-020) 654ms
+ ✓ tests/integration/add-comment.test.tsx > Add comment > appears in the comment history with its timestamp (FR-006) 1351ms
+ ✓ tests/integration/add-comment.test.tsx > Add comment > blocks an empty comment and sends no request (spec.md US3 scenario 2)
+ ✓ tests/integration/search-filter.test.tsx > Search and filter tickets > combines keyword search and status filter to the intersection (FR-009) 367ms
+ ✓ tests/integration/add-comment.test.tsx > Add comment > loads additional pages when a ticket has more comments than one page (FR-006a)
+ ✓ tests/integration/search-filter.test.tsx > Search and filter tickets > shows a distinct 'no results' state when a search/filter matches nothing (FR-015) 608ms
+ × tests/integration/create-ticket.test.tsx > Create ticket > creates a ticket and shows it in the list (US1 success path) 3172ms
+ ✓ tests/integration/create-ticket.test.tsx > Create ticket > blocks submission with an empty title (US1 validation path) 548ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed | 6 passed (7)
+      Tests  1 failed | 16 passed (17)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:48Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Get full error for failing create-ticket test
+
+`npx vitest run tests/integration/create-ticket.test.tsx 2>&1 | sed -n '1,80p'`
+
+```text
+ RUN  v2.1.9 /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui
+
+stderr | tests/integration/create-ticket.test.tsx > Create ticket > creates a ticket and shows it in the list (US1 success path)
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ tests/integration/create-ticket.test.tsx (2 tests | 1 failed) 3710ms
+   × Create ticket > creates a ticket and shows it in the list (US1 success path) 3098ms
+     → Found multiple elements with the text: Printer is broken
+
+Here are the matching elements:
+
+Ignored nodes: comments, script, style
+<p
+  class="MuiTypography-root MuiTypography-body1 css-4leci6-MuiTypography-root"
+>
+  Printer is broken
+</p>
+
+Ignored nodes: comments, script, style
+<h1
+  class="MuiTypography-root MuiTypography-h4 css-f84ov1-MuiTypography-root"
+>
+  Printer is broken
+</h1>
+
+(If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
+
+Ignored nodes: comments, script, style
+<body
+  style=""
+>
+  <div>
+    <div
+      class="MuiContainer-root MuiContainer-maxWidthSm css-9oy3gf-MuiContainer-root"
+    >
+      <nav
+        aria-label="breadcrumb"
+        class="MuiTypography-root MuiTypography-body1 MuiBreadcrumbs-root css-1hn1sqx-MuiTypography-root-MuiBreadcrumbs-root"
+      >
+        <ol
+          class="MuiBreadcrumbs-ol css-1uwp4ue-MuiBreadcrumbs-ol"
+        >
+          <li
+            class="MuiBreadcrumbs-li"
+          >
+            <a
+              class="MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineHover css-nv1n36-MuiTypography-root-MuiLink-root"
+              href="/"
+            >
+              Tickets
+            </a>
+          </li>
+          <li
+            aria-hidden="true"
+            class="MuiBreadcrumbs-separator css-jhr02i-MuiBreadcrumbs-separator"
+          >
+            /
+          </li>
+          <li
+            class="MuiBreadcrumbs-li"
+          >
+            <p
+              class="MuiTypography-root MuiTypography-body1 css-4leci6-MuiTypography-root"
+            >
+              Printer is broken
+            </p>
+          </li>
+        </ol>
+      </nav>
+      <div
+        class="MuiStack-root css-v2woy3-MuiStack-root"
+      >
+        <div
+          class="MuiStack-root css-1a41st4-MuiStack-root"
+        >
+          <div
+            class="MuiStack-root css-1sos3zc-MuiStack-root"
+          >
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:52Z)**_
+
+T054's "no code change" assumption was wrong — breadcrumbs duplicate the title text, so `findByText` now matches both the `<h1>` and the breadcrumb segment. Fixing to use a heading-role query.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:54Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./tests/integration/create-ticket.test.tsx`
+
+```text
+1	import { describe, it, expect } from "vitest";
+2	import { render, screen } from "@testing-library/react";
+3	import userEvent from "@testing-library/user-event";
+4	import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+5	import { MemoryRouter, Routes, Route } from "react-router-dom";
+6	import { TicketCreatePage } from "../../src/pages/TicketCreatePage";
+7	import { TicketListPage } from "../../src/pages/TicketListPage";
+8	import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
+9	
+10	function renderApp() {
+11	  const queryClient = new QueryClient();
+12	  return render(
+13	    <QueryClientProvider client={queryClient}>
+14	      <MemoryRouter initialEntries={["/tickets/new"]}>
+15	        <Routes>
+16	          <Route path="/" element={<TicketListPage />} />
+17	          <Route path="/tickets/new" element={<TicketCreatePage />} />
+18	          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+19	        </Routes>
+20	      </MemoryRouter>
+21	    </QueryClientProvider>,
+22	  );
+23	}
+24	
+25	describe("Create ticket", () => {
+26	  it("creates a ticket and shows it in the list (US1 success path)", async () => {
+27	    const user = userEvent.setup();
+28	    renderApp();
+29	
+30	    await user.type(screen.getByLabelText(/title/i), "Printer is broken");
+31	    await user.type(
+32	      screen.getByLabelText(/description/i),
+33	      "The office printer on floor 2 won't turn on.",
+34	    );
+35	    await user.click(screen.getByLabelText(/priority/i));
+36	    await user.click(await screen.findByRole("option", { name: "HIGH" }));
+37	    await user.click(screen.getByRole("button", { name: /create ticket/i }));
+38	
+39	    expect(await screen.findByText("Printer is broken")).toBeInTheDocument();
+40	    expect(screen.getByText("Open")).toBeInTheDocument();
+41	  });
+42	
+43	  it("blocks submission with an empty title (US1 validation path)", async () => {
+44	    const user = userEvent.setup();
+45	    renderApp();
+46	
+47	    await user.type(
+48	      screen.getByLabelText(/description/i),
+49	      "Some description",
+50	    );
+51	    await user.click(screen.getByLabelText(/priority/i));
+52	    await user.click(await screen.findByRole("option", { name: "LOW" }));
+53	    await user.click(screen.getByRole("button", { name: /create ticket/i }));
+54	
+55	    expect(await screen.findByText(/title is required/i)).toBeInTheDocument();
+56	  });
+57	});
+58
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/tests/integration/create-ticket.test.tsx has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:20:58Z)**_
+
+Now full suite + build + lint again.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:16Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Full typecheck, lint, test verification
+
+`npx tsc --noEmit && npx eslint . && npx vitest run 2>&1 | tail -30`
+
+```text
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | tests/integration/view-edit-navigation.test.tsx > View and edit navigation > navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017)
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ tests/integration/ticket-list.test.tsx (2 tests) 392ms
+   ✓ Ticket list > shows title, status, priority, and assignee for each ticket (FR-002) 315ms
+ ✓ tests/integration/invalid-transition.test.tsx (2 tests) 668ms
+   ✓ Status transitions > rejects a transition the backend no longer allows and keeps the displayed status unchanged (FR-010, FR-011) 518ms
+ ✓ tests/integration/update-ticket.test.tsx (2 tests) 1328ms
+   ✓ Update ticket > updates title/description/priority/assignee and returns to the read-only detail page with the change reflected (FR-004, FR-019) 1109ms
+ ✓ tests/integration/view-edit-navigation.test.tsx (2 tests) 1344ms
+   ✓ View and edit navigation > navigates from list View to a read-only detail page, then to a separate edit page (FR-003, FR-016, FR-017) 732ms
+   ✓ View and edit navigation > saving the edit page returns to the detail page with updated values and correct breadcrumbs (FR-004, FR-019, FR-020) 605ms
+ ✓ tests/integration/add-comment.test.tsx (3 tests) 1467ms
+   ✓ Add comment > appears in the comment history with its timestamp (FR-006) 1153ms
+ ✓ tests/integration/search-filter.test.tsx (4 tests) 2039ms
+   ✓ Search and filter tickets > narrows the list to tickets matching a keyword in title or description (FR-007) 834ms
+   ✓ Search and filter tickets > narrows the list to tickets in the selected status (FR-008) 443ms
+   ✓ Search and filter tickets > shows a distinct 'no results' state when a search/filter matches nothing (FR-015) 491ms
+ ✓ tests/integration/create-ticket.test.tsx (2 tests) 2224ms
+   ✓ Create ticket > creates a ticket and shows it in the list (US1 success path) 1707ms
+   ✓ Create ticket > blocks submission with an empty title (US1 validation path) 511ms
+
+ Test Files  7 passed (7)
+      Tests  17 passed (17)
+   Start at  19:51:11
+   Duration  4.97s (transform 501ms, setup 2.85s, collect 9.20s, tests 9.46s, environment 4.21s, prepare 653ms)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:18Z)**_
+
+All 17 tests pass, typecheck and lint clean. Now **T081**: production build + quickstart re-walk (automated portion).
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run production build
+
+`npm run build 2>&1 | tail -30`
+
+```text
+> ticketing-system-ui@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 649 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  0.34 kB │ gzip:   0.24 kB
+dist/assets/index-BApftePB.js  520.94 kB │ gzip: 161.98 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.96s
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:30Z)**_
+
+Build succeeds. Now mark T044–T054 and T081 done in tasks.md.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:31Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./specs/001-ticket-management-ui/tasks.md`
+
+```text
+130	split" decision). These tasks apply on top of the already-implemented
+131	`TicketDetailPage` (T037–T043) and its later comment-pagination rewiring
+132	(the US3 amendment below, already done) — task numbering here reflects
+133	grouping by story, not chronological completion order.
+134	
+135	- [ ] T044 [P] [US2] Implement generic `Breadcrumbs` component in `src/components/Breadcrumbs/Breadcrumbs.tsx`: accepts an ordered `{ label: string; to?: string }[]` prop, renders MUI `Breadcrumbs` with a React Router `Link` for each segment that has `to`, and plain `Typography` for the final/current segment (FR-020)
+136	- [ ] T045 [US2] Implement `TicketEditPage` in `src/pages/TicketEditPage.tsx`: fetches the ticket via `useTicket`, renders `Breadcrumbs` (`"Tickets" → "/"`, ticket title `→ "/tickets/{id}"`, `"Edit"`) plus `TicketForm` in edit mode wired to `useUpdateTicket`, and navigates to `/tickets/{id}` on a successful save (FR-004, FR-017, FR-019) (depends on T037, T038, T041, T044)
+137	- [ ] T046 [US2] Simplify `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` to read-only: remove the inline `TicketForm`, add `Breadcrumbs` (`"Tickets" → "/"`, ticket title), add an "Edit" link to `/tickets/{id}/edit`; keep `StatusTransitionMenu`, `CommentList`, `CommentForm` as-is (FR-003) (depends on T044)
+138	- [ ] T047 [US2] Add `/tickets/:ticketId/edit` → `TicketEditPage` route in `src/routes/router.tsx` (depends on T045)
+139	- [ ] T048 [P] [US2] Add a "View" action (link to `/tickets/{id}`) per ticket row in `TicketList` component in `src/components/TicketList/TicketList.tsx` (FR-016) — the list previously had no way to open an existing ticket at all
+140	- [ ] T049 [P] [US2] Add `Breadcrumbs` (`"Tickets"`, current page, not a link) to `TicketListPage` in `src/pages/TicketListPage.tsx` (depends on T044)
+141	- [ ] T050 [P] [US2] Add `Breadcrumbs` (`"Tickets" → "/"`, `"New Ticket"`) to `TicketCreatePage` in `src/pages/TicketCreatePage.tsx` (depends on T044)
+142	- [ ] T051 [P] [US2] Integration test: clicking "View" on a ticket in the list navigates to its read-only detail page with no editable fields, and clicking "Edit" there navigates to a separate edit page with fields pre-filled (FR-003, FR-016, FR-017) in `tests/integration/view-edit-navigation.test.tsx`
+143	- [ ] T052 [US2] Integration test: saving the edit page navigates back to the read-only detail page with updated values shown, and each page's breadcrumb trail matches spec.md FR-020's examples (FR-004, FR-019, FR-020) in `tests/integration/view-edit-navigation.test.tsx` (depends on T045, T046)
+144	- [ ] T053 [US2] Update `tests/integration/update-ticket.test.tsx` to navigate via the "Edit" link/page instead of asserting an inline edit form on the detail page, since editing moved to a separate page (depends on T045, T046)
+145	- [ ] T054 [P] [US2] Re-run `tests/integration/create-ticket.test.tsx` unchanged: its existing assertion that creating a ticket lands on the read-only detail page (FR-018) still holds after the `TicketDetailPage` read-only refactor — no code change expected, verification only (depends on T046)
+146	
+147	**Checkpoint**: User Stories 1 AND 2 (with the View/Edit page split and breadcrumbs) both work independently
+148	
+149	---
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:49Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:51Z)**_
+
+Now T081 (build/quickstart re-walk).
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:52Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Locate T081 line
+
+`grep -n "T081" specs/001-ticket-management-ui/tasks.md`
+
+```text
+225:- [ ] T081 Run `npm run build` (typecheck + production Vite build) and re-walk `quickstart.md`'s manual scenarios (updated for the View/Edit split and breadcrumbs) as far as possible without a live backend instance
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /home/tahir-hussain/code/code/husain707/reactive/growth/fy27h1/ticketing-system/ticketing-system-ui/specs/001-ticket-management-ui/tasks.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:21:58Z)**_
+
+Final verification pass and `git status`.
+
+_**Agent (claude-sonnet-5 2026-09-21 14:22:16Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Final full verification and git status
+
+`grep -c '^- \[X\] T[0-9]' specs/001-ticket-management-ui/tasks.md; grep -c '^- \[ \] T[0-9]' specs/001-ticket-management-ui/tasks.md; echo "---"; npx tsc --noEmit && npx eslint . && npx vitest run 2>&1 | tail -8 && echo "---"; git status --short | head -40`
+
+```text
+82
+0
+---
+   ✓ Create ticket > creates a ticket and shows it in the list (US1 success path) 1971ms
+   ✓ Create ticket > blocks submission with an empty title (US1 validation path) 662ms
+
+ Test Files  7 passed (7)
+      Tests  17 passed (17)
+   Start at  19:52:11
+   Duration  5.44s (transform 485ms, setup 2.88s, collect 9.38s, tests 10.14s, environment 4.26s, prepare 888ms)
+
+---
+ M .specstory/history/2026-09-21_02-38-33Z-low-medium-high-critical.md
+ M .specstory/statistics.json
+ M specs/001-ticket-management-ui/contracts/README.md
+ M specs/001-ticket-management-ui/plan.md
+ M specs/001-ticket-management-ui/quickstart.md
+ M specs/001-ticket-management-ui/research.md
+ M specs/001-ticket-management-ui/spec.md
+ M specs/001-ticket-management-ui/tasks.md
+ M src/components/TicketList/TicketList.tsx
+ M src/pages/TicketCreatePage.tsx
+ M src/pages/TicketDetailPage.tsx
+ M src/pages/TicketListPage.tsx
+ M src/routes/router.tsx
+ M tests/integration/create-ticket.test.tsx
+ M tests/integration/update-ticket.test.tsx
+?? src/components/Breadcrumbs/
+?? src/pages/TicketEditPage.tsx
+?? tests/integration/view-edit-navigation.test.tsx
+```
+</details></tool-use>
+
+_**Agent (claude-sonnet-5 2026-09-21 14:22:22Z)**_
+
+No `.specify/extensions.yml` — hooks skipped.
+
+**All 82/82 tasks complete.** T044–T054 (US2 View/Edit split amendment) and T081 (build re-verification) done.
+
+Built: `Breadcrumbs` component (generic, reused everywhere), `TicketEditPage` (fields-only, redirects to detail on save), `TicketDetailPage` simplified to read-only (fields + status transitions + comments, "Edit" link), `/tickets/:ticketId/edit` route, "View" link added to each `TicketList` row (the list previously had **no way to open a ticket at all** — genuine gap, now fixed), breadcrumbs added to list/create/detail/edit pages.
+
+Verified: `tsc --noEmit` clean, `eslint .` clean, `npm run build` succeeds, **17/17 tests pass** (2 new tests in `view-edit-navigation.test.tsx`, `update-ticket.test.tsx` rewritten for the Edit-page flow, `create-ticket.test.tsx` fixed for a real ambiguity the breadcrumb introduced).
+
+One thing worth flagging: T054 assumed "no code change expected" for `create-ticket.test.tsx` — that assumption was wrong. Adding the breadcrumb made the ticket title appear twice on the detail page (breadcrumb segment + `<h1>`), so the old `findByText("Printer is broken")` assertion became ambiguous and had to be changed to a heading-role query. Documented inline in tasks.md.
+
+Full spec (all 4 user stories + View/Edit split + breadcrumbs) now implemented and tested end-to-end. Manual browser walkthrough against a live backend still not run (no backend instance in this environment) — that's the one remaining human/CI step.

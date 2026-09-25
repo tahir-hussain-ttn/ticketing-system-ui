@@ -14,6 +14,7 @@ export const ticketsApi = {
       query: {
         q: params.q,
         status: params.status,
+        scope: params.scope,
         page: params.page,
         size: params.size,
       },
@@ -24,6 +25,13 @@ export const ticketsApi = {
     return request<Ticket>("/api/v1/tickets", {
       method: "POST",
       body,
+    });
+  },
+
+  reassign(id: string, assigneeId: string): Promise<Ticket> {
+    return request<Ticket>(`/api/v1/tickets/${id}/reassign`, {
+      method: "POST",
+      body: { assigneeId },
     });
   },
 

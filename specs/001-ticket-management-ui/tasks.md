@@ -118,7 +118,33 @@ repo): `src/`, `tests/` — per plan.md's Project Structure.
 - [X] T042 [US2] Implement `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` wiring `useTicket`, `TicketForm` (edit mode), `StatusTransitionMenu`, `StatusBadge`, `PriorityBadge` (depends on T037, T038, T040, T041)
 - [X] T043 [US2] Wire `/tickets/:ticketId` → `TicketDetailPage` in `src/routes/router.tsx` (depends on T042); also updated T029's `TicketCreatePage` to navigate to this route now that it exists, resolving that phase's earlier placeholder
 
-**Checkpoint**: User Stories 1 AND 2 both work independently
+### Amendment for User Story 2 — read-only View page, separate Edit page, and breadcrumbs
+
+The spec was amended to split the single detail page into a read-only
+"View" page (reached via a new "View" action on the ticket list, showing
+the ticket's fields plus its status-transition control and comments) and
+a separate "Edit" page (fields only, reached via an "Edit" action on the
+View page). Creating or saving an edit both redirect to the View page,
+and every page shows breadcrumb navigation (spec.md Clarifications,
+FR-003, FR-004, FR-016–FR-020; plan.md/research.md's "View/edit page
+split" decision). These tasks apply on top of the already-implemented
+`TicketDetailPage` (T037–T043) and its later comment-pagination rewiring
+(the US3 amendment below, already done) — task numbering here reflects
+grouping by story, not chronological completion order.
+
+- [X] T044 [P] [US2] Implement generic `Breadcrumbs` component in `src/components/Breadcrumbs/Breadcrumbs.tsx`: accepts an ordered `{ label: string; to?: string }[]` prop, renders MUI `Breadcrumbs` with a React Router `Link` for each segment that has `to`, and plain `Typography` for the final/current segment (FR-020)
+- [X] T045 [US2] Implement `TicketEditPage` in `src/pages/TicketEditPage.tsx`: fetches the ticket via `useTicket`, renders `Breadcrumbs` (`"Tickets" → "/"`, ticket title `→ "/tickets/{id}"`, `"Edit"`) plus `TicketForm` in edit mode wired to `useUpdateTicket`, and navigates to `/tickets/{id}` on a successful save (FR-004, FR-017, FR-019) (depends on T037, T038, T041, T044)
+- [X] T046 [US2] Simplify `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` to read-only: remove the inline `TicketForm`, add `Breadcrumbs` (`"Tickets" → "/"`, ticket title), add an "Edit" link to `/tickets/{id}/edit`; keep `StatusTransitionMenu`, `CommentList`, `CommentForm` as-is (FR-003) (depends on T044)
+- [X] T047 [US2] Add `/tickets/:ticketId/edit` → `TicketEditPage` route in `src/routes/router.tsx` (depends on T045)
+- [X] T048 [P] [US2] Add a "View" action (link to `/tickets/{id}`) per ticket row in `TicketList` component in `src/components/TicketList/TicketList.tsx` (FR-016) — the list previously had no way to open an existing ticket at all
+- [X] T049 [P] [US2] Add `Breadcrumbs` (`"Tickets"`, current page, not a link) to `TicketListPage` in `src/pages/TicketListPage.tsx` (depends on T044)
+- [X] T050 [P] [US2] Add `Breadcrumbs` (`"Tickets" → "/"`, `"New Ticket"`) to `TicketCreatePage` in `src/pages/TicketCreatePage.tsx` (depends on T044)
+- [X] T051 [P] [US2] Integration test: clicking "View" on a ticket in the list navigates to its read-only detail page with no editable fields, and clicking "Edit" there navigates to a separate edit page with fields pre-filled (FR-003, FR-016, FR-017) in `tests/integration/view-edit-navigation.test.tsx`
+- [X] T052 [US2] Integration test: saving the edit page navigates back to the read-only detail page with updated values shown, and each page's breadcrumb trail matches spec.md FR-020's examples (FR-004, FR-019, FR-020) in `tests/integration/view-edit-navigation.test.tsx` (depends on T045, T046)
+- [X] T053 [US2] Update `tests/integration/update-ticket.test.tsx` to navigate via the "Edit" link/page instead of asserting an inline edit form on the detail page, since editing moved to a separate page (depends on T045, T046)
+- [X] T054 [P] [US2] Re-run `tests/integration/create-ticket.test.tsx` — **assumption corrected**: the run was NOT a no-op. The new breadcrumb (T046) duplicates the ticket title text on the detail page (breadcrumb segment + `<h1>`), so `findByText("Printer is broken")` became ambiguous (`Found multiple elements`). Fixed by switching that assertion to `findByRole("heading", { name: ... })` (depends on T046)
+
+**Checkpoint**: User Stories 1 AND 2 (with the View/Edit page split and breadcrumbs) both work independently
 
 ---
 
@@ -130,37 +156,37 @@ repo): `src/`, `tests/` — per plan.md's Project Structure.
 
 ### Tests for User Story 3
 
-- [X] T044 [P] [US3] Integration test (adapted): comment appears in chronological order with its timestamp (FR-006) in `tests/integration/add-comment.test.tsx` — no author assertion; see implementation note on T049 for why
-- [X] T045 [P] [US3] Integration test: empty comment is blocked client-side, no request sent (FR-006, spec.md US3 acceptance scenario 2) in `tests/integration/add-comment.test.tsx`
+- [X] T055 [P] [US3] Integration test (adapted): comment appears in chronological order with its timestamp (FR-006) in `tests/integration/add-comment.test.tsx` — no author assertion; see implementation note on T060 for why
+- [X] T056 [P] [US3] Integration test: empty comment is blocked client-side, no request sent (FR-006, spec.md US3 acceptance scenario 2) in `tests/integration/add-comment.test.tsx`
 
 ### Implementation for User Story 3
 
-- [X] T046 [P] [US3] Add MSW handler for `POST /api/v1/tickets/{ticketId}/comments` (201 `CommentResponse` / 400 `ApiError`) in `tests/msw/handlers.ts`
-- [X] T047 [US3] Implement `commentsApi.addComment(ticketId, request: CommentCreateRequest)` in `src/api/commentsApi.ts`, typed per `CommentCreateRequest`/`CommentResponse` — `content` required, `minLength: 1` (depends on T011, T007, T009)
-- [X] T048 [US3] Implement `useAddComment` hook (mutation, invalidates the ticket detail query on success) in `src/hooks/useAddComment.ts` (depends on T047)
-- [X] T049 [P] [US3] Implement `CommentList` component in `src/components/CommentList/CommentList.tsx` rendering comments in chronological (creation) order — **deviation**: renders content + timestamp only, no author. `backend-api-doc.json`'s `CommentResponse` has no author field at all (and this slice has no authentication per spec.md Assumptions), so "author" from spec.md FR-006/US3 cannot be populated from the real backend contract. This is a genuine spec-vs-backend-contract gap, not a simplification; flagging for spec.md follow-up rather than fabricating an author value.
-- [X] T050 [P] [US3] Implement `CommentForm` component in `src/components/CommentForm/CommentForm.tsx`: `content` required, non-empty, blocks submission with a field error otherwise, using the shared `mapFieldErrors` utility (T010) to render any backend `400 fieldErrors` (depends on T010)
-- [X] T051 [US3] Wire `CommentList` + `CommentForm` into `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` (depends on T048, T049, T050, T042)
+- [X] T057 [P] [US3] Add MSW handler for `POST /api/v1/tickets/{ticketId}/comments` (201 `CommentResponse` / 400 `ApiError`) in `tests/msw/handlers.ts`
+- [X] T058 [US3] Implement `commentsApi.addComment(ticketId, request: CommentCreateRequest)` in `src/api/commentsApi.ts`, typed per `CommentCreateRequest`/`CommentResponse` — `content` required, `minLength: 1` (depends on T011, T007, T009)
+- [X] T059 [US3] Implement `useAddComment` hook (mutation, invalidates the ticket detail query on success) in `src/hooks/useAddComment.ts` (depends on T058)
+- [X] T060 [P] [US3] Implement `CommentList` component in `src/components/CommentList/CommentList.tsx` rendering comments in chronological (creation) order — **deviation**: renders content + timestamp only, no author. `backend-api-doc.json`'s `CommentResponse` has no author field at all (and this slice has no authentication per spec.md Assumptions), so "author" from spec.md FR-006/US3 cannot be populated from the real backend contract. This is a genuine spec-vs-backend-contract gap, not a simplification; flagging for spec.md follow-up rather than fabricating an author value.
+- [X] T061 [P] [US3] Implement `CommentForm` component in `src/components/CommentForm/CommentForm.tsx`: `content` required, non-empty, blocks submission with a field error otherwise, using the shared `mapFieldErrors` utility (T010) to render any backend `400 fieldErrors` (depends on T010)
+- [X] T062 [US3] Wire `CommentList` + `CommentForm` into `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` (depends on T059, T060, T061, T042)
 
 ### Amendment for User Story 3 — comment listing is now a dedicated paginated endpoint
 
 `backend-api-doc.json` was updated (spec.md Clarifications, 2026-09-21) to
 add `GET /api/v1/tickets/{ticketId}/comments` returning a paginated
 `CommentPage` (oldest-to-newest, default `size` 20), confirming comments
-have no author field. T044–T051 above implemented comments against the
+have no author field. T055–T062 above implemented comments against the
 old assumption (reading `ticket.comments` from `TicketDetailResponse`,
 unpaginated). These tasks correct that per plan.md/research.md's "Comment
 listing" decision — see data-model.md's `CommentPage` section for the
 exact shape.
 
-- [X] T052 [P] [US3] Add `CommentPage` to `src/types/comment.ts`: `content: Comment[]`, `page: number`, `size: number`, `totalElements: number`, `totalPages: number` — per data-model.md
-- [X] T053 [P] [US3] Update MSW handlers in `tests/msw/handlers.ts`: add `GET /api/v1/tickets/:ticketId/comments` returning a paginated `CommentPage` (200, oldest-to-newest, default `size` 20) / `404 ApiError` for a missing ticket; keep the existing `POST .../comments` handler (depends on T052)
-- [X] T054 [US3] Implement `commentsApi.list(ticketId, params?: { page?: number; size?: number })` in `src/api/commentsApi.ts`, typed per `CommentPage`, calling `GET /api/v1/tickets/{ticketId}/comments` (depends on T011, T052)
-- [X] T055 [US3] Implement `useComments` hook (TanStack Query, keyed by `["comments", ticketId, page]`, independent of the ticket-detail query) in `src/hooks/useComments.ts` (depends on T054)
-- [X] T056 [US3] Update `useAddComment` hook in `src/hooks/useAddComment.ts` to invalidate the `["comments", ticketId]` query (in addition to, or instead of, `["ticket", ticketId]`) on success, so a new comment reappears without re-requesting every previously loaded page (spec.md Edge Cases) (depends on T055)
-- [X] T057 [US3] Update `CommentList` in `src/components/CommentList/CommentList.tsx` to accept a `CommentPage` (or its `content`/`page`/`totalPages`) plus a page-change callback, and render an MUI `Pagination` control when `totalPages > 1` (depends on T052)
-- [X] T058 [US3] Rewire `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` to source the comment list from `useComments` (own `page` state) instead of `ticket.comments`, passing the page-change callback to `CommentList` (depends on T055, T057)
-- [X] T059 [P] [US3] Integration test: a ticket seeded with more comments than one page shows a way to load additional pages, and all comments across pages remain visible on request (FR-006a) in `tests/integration/add-comment.test.tsx` (depends on T053, T058)
+- [X] T063 [P] [US3] Add `CommentPage` to `src/types/comment.ts`: `content: Comment[]`, `page: number`, `size: number`, `totalElements: number`, `totalPages: number` — per data-model.md
+- [X] T064 [P] [US3] Update MSW handlers in `tests/msw/handlers.ts`: add `GET /api/v1/tickets/:ticketId/comments` returning a paginated `CommentPage` (200, oldest-to-newest, default `size` 20) / `404 ApiError` for a missing ticket; keep the existing `POST .../comments` handler (depends on T063)
+- [X] T065 [US3] Implement `commentsApi.list(ticketId, params?: { page?: number; size?: number })` in `src/api/commentsApi.ts`, typed per `CommentPage`, calling `GET /api/v1/tickets/{ticketId}/comments` (depends on T011, T063)
+- [X] T066 [US3] Implement `useComments` hook (TanStack Query, keyed by `["comments", ticketId, page]`, independent of the ticket-detail query) in `src/hooks/useComments.ts` (depends on T065)
+- [X] T067 [US3] Update `useAddComment` hook in `src/hooks/useAddComment.ts` to invalidate the `["comments", ticketId]` query (in addition to, or instead of, `["ticket", ticketId]`) on success, so a new comment reappears without re-requesting every previously loaded page (spec.md Edge Cases) (depends on T066)
+- [X] T068 [US3] Update `CommentList` in `src/components/CommentList/CommentList.tsx` to accept a `CommentPage` (or its `content`/`page`/`totalPages`) plus a page-change callback, and render an MUI `Pagination` control when `totalPages > 1` (depends on T063)
+- [X] T069 [US3] Rewire `TicketDetailPage` in `src/pages/TicketDetailPage.tsx` to source the comment list from `useComments` (own `page` state) instead of `ticket.comments`, passing the page-change callback to `CommentList` (depends on T066, T068)
+- [X] T070 [P] [US3] Integration test: a ticket seeded with more comments than one page shows a way to load additional pages, and all comments across pages remain visible on request (FR-006a) in `tests/integration/add-comment.test.tsx` (depends on T064, T069)
 
 **Checkpoint**: User Stories 1, 2, AND 3 (with corrected, paginated comment listing) all work independently
 
@@ -174,17 +200,17 @@ exact shape.
 
 ### Tests for User Story 4
 
-- [X] T060 [P] [US4] Integration test: keyword search narrows the list to tickets matching title/description only (FR-007, per Clarifications 2026-09-21); MSW fixture for this test seeds at least 50 tickets to reflect SC-002's scale assumption in `tests/integration/search-filter.test.tsx`
-- [X] T061 [P] [US4] Integration test: status filter narrows the list to tickets in the selected status (FR-008) in `tests/integration/search-filter.test.tsx`
-- [X] T062 [P] [US4] Integration test: keyword search and status filter combined narrow to the intersection (FR-009) in `tests/integration/search-filter.test.tsx`
-- [X] T063 [P] [US4] Integration test: a search/filter combination matching nothing shows a "no results" state distinct from the empty-list state (FR-015) in `tests/integration/search-filter.test.tsx`
+- [X] T071 [P] [US4] Integration test: keyword search narrows the list to tickets matching title/description only (FR-007, per Clarifications 2026-09-21); MSW fixture for this test seeds at least 50 tickets to reflect SC-002's scale assumption in `tests/integration/search-filter.test.tsx`
+- [X] T072 [P] [US4] Integration test: status filter narrows the list to tickets in the selected status (FR-008) in `tests/integration/search-filter.test.tsx`
+- [X] T073 [P] [US4] Integration test: keyword search and status filter combined narrow to the intersection (FR-009) in `tests/integration/search-filter.test.tsx`
+- [X] T074 [P] [US4] Integration test: a search/filter combination matching nothing shows a "no results" state distinct from the empty-list state (FR-015) in `tests/integration/search-filter.test.tsx`
 
 ### Implementation for User Story 4
 
-- [X] T064 [US4] Extend `useTickets` hook in `src/hooks/useTickets.ts` to accept and pass `q` and `status` query params together (depends on T022) — already satisfied: the hook takes the full `TicketListParams` (including `q`/`status`) and passes it straight to `ticketsApi.list`; no code change needed, only the call site (T067)
-- [X] T065 [P] [US4] Implement `SearchBar` component (debounced keyword input) in `src/components/TicketList/SearchBar.tsx`
-- [X] T066 [P] [US4] Implement `StatusFilter` component (select from `OPEN`/`IN_PROGRESS`/`RESOLVED`/`CLOSED`/`CANCELLED` plus "All") in `src/components/TicketList/StatusFilter.tsx`
-- [X] T067 [US4] Wire `SearchBar` + `StatusFilter` into `TicketListPage`, combining both into the `useTickets` params, and render the "no results" state distinctly from the empty-list state (FR-015) in `src/pages/TicketListPage.tsx` (depends on T064, T065, T066, T028)
+- [X] T075 [US4] Extend `useTickets` hook in `src/hooks/useTickets.ts` to accept and pass `q` and `status` query params together (depends on T022) — already satisfied: the hook takes the full `TicketListParams` (including `q`/`status`) and passes it straight to `ticketsApi.list`; no code change needed, only the call site (T078)
+- [X] T076 [P] [US4] Implement `SearchBar` component (debounced keyword input) in `src/components/TicketList/SearchBar.tsx`
+- [X] T077 [P] [US4] Implement `StatusFilter` component (select from `OPEN`/`IN_PROGRESS`/`RESOLVED`/`CLOSED`/`CANCELLED` plus "All") in `src/components/TicketList/StatusFilter.tsx`
+- [X] T078 [US4] Wire `SearchBar` + `StatusFilter` into `TicketListPage`, combining both into the `useTickets` params, and render the "no results" state distinctly from the empty-list state (FR-015) in `src/pages/TicketListPage.tsx` (depends on T075, T076, T077, T028)
 
 **Checkpoint**: All user stories are independently functional
 
@@ -194,10 +220,10 @@ exact shape.
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [X] T068 [P] Add a global error `Snackbar`/`Alert` for unexpected/network failures (e.g. backend unreachable — spec.md Edge Cases) in `src/App.tsx` — scoped to silent background-refetch failures (query already has cached data, so no local `isError` UI would otherwise show it), to avoid duplicating the error Alerts each page/form already renders for a first-load or mutation failure
-- [X] T069 [P] Add `package.json` scripts: `"typecheck": "tsc --noEmit"`, `"test": "vitest run"`, `"lint"` — already present from T001/Setup; verified unchanged
-- [X] T070 Ran `npm run build` (typecheck + production Vite build) successfully as an automated proxy for `quickstart.md`'s setup/build step. **Not run**: the manual browser walkthrough scenarios in quickstart.md, since no live instance of the backend from `backend-api-doc.json` is running in this environment — that requires a human (or a separate backend-running environment) to execute
-- [X] T071 [P] Verified: `grep -rn "\bany\b"` across `src/`/`tests/` → none; no `fetch`/`axios` call outside `src/api/`; ESLint's `@typescript-eslint/no-explicit-any: "error"` active; `git check-ignore -v .env.local` confirms it's git-ignored (Constitution Principles II, V, VI)
+- [X] T079 [P] Add a global error `Snackbar`/`Alert` for unexpected/network failures (e.g. backend unreachable — spec.md Edge Cases) in `src/App.tsx` — scoped to silent background-refetch failures (query already has cached data, so no local `isError` UI would otherwise show it), to avoid duplicating the error Alerts each page/form already renders for a first-load or mutation failure
+- [X] T080 [P] Add `package.json` scripts: `"typecheck": "tsc --noEmit"`, `"test": "vitest run"`, `"lint"` — already present from T001/Setup; verified unchanged
+- [X] T081 Ran `npm run build` (typecheck + production Vite build) successfully — 649 modules, no errors. Automated coverage of `quickstart.md`'s updated View/Edit/breadcrumb scenarios is provided by `tests/integration/view-edit-navigation.test.tsx` (T051, T052) and the updated `update-ticket.test.tsx`/`create-ticket.test.tsx`. **Not run**: the manual browser walkthrough, since no live instance of the backend from `backend-api-doc.json` is running in this environment
+- [X] T082 [P] Verified: `grep -rn "\bany\b"` across `src/`/`tests/` → none; no `fetch`/`axios` call outside `src/api/`; ESLint's `@typescript-eslint/no-explicit-any: "error"` active; `git check-ignore -v .env.local` confirms it's git-ignored (Constitution Principles II, V, VI)
 
 ---
 
@@ -209,16 +235,17 @@ exact shape.
 - **Foundational (Phase 2)**: Depends on Setup completion — BLOCKS all user stories
 - **User Stories (Phase 3–6)**: All depend on Foundational phase completion
   - US1 and US2 are both P1 and have no dependency on each other's business logic, but US2's `TicketDetailPage`/`TicketForm` edit mode (T041–T043) build on US1's `TicketForm`/routing (T026, T030) — implement US1 first
-  - US3 (comments) integrates into `TicketDetailPage` from US2 (T042) — implement after US2. Its amendment tasks (T052–T059) correct the comment list to the now-paginated backend endpoint and must land before US4, since T067 (US4) touches `TicketListPage.tsx`, a file `TicketDetailPage.tsx`'s comment rewiring does not share — no ordering conflict, but do T052–T059 before considering US3 complete
-  - US4 (search/filter) extends `useTickets`/`TicketListPage` from US1 (T022, T028) — implement after US1; independent of US2/US3
+  - US2's View/Edit split amendment (T044–T054) touches `TicketListPage.tsx` (adding the "View" link and breadcrumbs, T048–T049) and `TicketCreatePage.tsx` (breadcrumbs, T050), both US1 files — do this amendment after US1 exists, which it already does
+  - US3 (comments) integrates into `TicketDetailPage` from US2 (T042) — implement after US2, and after US2's View/Edit amendment (T046 removes `TicketDetailPage`'s inline form; T062 wires comments into the same file — both must land, in either order relative to each other, before US3 is considered complete). Its own amendment tasks (T063–T070) correct the comment list to the now-paginated backend endpoint
+  - US4 (search/filter) extends `useTickets`/`TicketListPage` from US1 (T022, T028) — implement after US1; independent of US2/US3, but shares `TicketListPage.tsx` with US2's amendment (T049, T078) — sequence those two edits, don't parallelize them
 - **Polish (Phase 7)**: Depends on all desired user stories being complete
 
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Foundational only
-- **User Story 2 (P1)**: Foundational + reuses `TicketForm`/router from US1 (T026, T030)
-- **User Story 3 (P2)**: Foundational + integrates into `TicketDetailPage` from US2 (T042)
-- **User Story 4 (P3)**: Foundational + extends `useTickets`/`TicketListPage` from US1 (T022, T028)
+- **User Story 2 (P1)**: Foundational + reuses `TicketForm`/router from US1 (T026, T030); its View/Edit amendment (T044–T054) also touches US1's `TicketListPage.tsx`/`TicketCreatePage.tsx`
+- **User Story 3 (P2)**: Foundational + integrates into `TicketDetailPage` from US2 (T042, and after US2's amendment T046)
+- **User Story 4 (P3)**: Foundational + extends `useTickets`/`TicketListPage` from US1 (T022, T028); shares `TicketListPage.tsx` with US2's amendment (T049)
 
 ### Within Each User Story
 
@@ -234,9 +261,10 @@ exact shape.
 - T006–T009, T012, T015, T016 (Foundational) in parallel
 - T017–T019 (US1 tests) in parallel; T024–T025 (US1 badges) in parallel
 - T031–T034 (US2 tests) in parallel
-- T044–T045 (US3 tests) in parallel; T049–T050 (US3 components) in parallel
-- T052–T053 (US3 amendment: type + MSW handler) in parallel
-- T060–T063 (US4 tests) in parallel; T065–T066 (US4 components) in parallel
+- T048–T050 (US2 amendment: list "View" link, list breadcrumbs, create-page breadcrumbs) in parallel — different files; T044 (Breadcrumbs component) is a dependency of T049/T050 but can run alongside T048 (no shared file)
+- T055–T056 (US3 tests) in parallel; T060–T061 (US3 components) in parallel
+- T063–T064 (US3 amendment: type + MSW handler) in parallel
+- T071–T074 (US4 tests) in parallel; T076–T077 (US4 components) in parallel
 - Once Foundational completes, US1 and (with the noted reuse points) US4 can proceed in parallel with different developers; US2 and US3 are best sequenced after US1 due to the reuse points above
 
 ---

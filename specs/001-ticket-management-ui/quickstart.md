@@ -37,24 +37,31 @@ Development Workflow gate).
 ## Manual validation scenarios
 
 1. **Create and list (US1)** — Open the app, click "New Ticket", fill in
-   title/description/priority, submit. Expect: redirected to the ticket
-   list (or detail), new ticket visible with status `OPEN`. Submit again
-   with title left empty: expect a field-level error, no request sent to
-   the backend that would otherwise reject it.
-2. **View and update (US2)** — Open the created ticket, edit its priority
-   and assignee (from the dropdown), save. Expect: updated values shown
-   immediately. Attempt an invalid status change no menu currently offers
-   by re-selecting an already-terminal ticket's status control if
+   title/description/priority, submit. Expect: redirected to the new
+   ticket's read-only detail page (`/tickets/{id}`), status `OPEN`
+   displayed, and the breadcrumb reading "Tickets / [Title]". Go back to
+   the list; the ticket is visible there too. Submit the create form
+   again with title left empty: expect a field-level error, no request
+   sent to the backend that would otherwise reject it.
+2. **View and edit (US2)** — Click "View" on a ticket from the list.
+   Expect: a read-only page with no editable fields, showing the ticket's
+   details and comments, with an "Edit" link. Click "Edit". Expect: a
+   separate page (`/tickets/{id}/edit`) with the fields pre-filled and
+   editable, breadcrumb reading "Tickets / [Title] / Edit". Change
+   priority and assignee (from the dropdown), save. Expect: redirected
+   back to the read-only detail page with the updated values shown. On
+   the detail page, attempt an invalid status change no menu currently
+   offers by re-selecting an already-terminal ticket's status control if
    available; otherwise verify via a `CLOSED` ticket that no forward
    transition is offered, and that any attempt still round-trips through
    the backend rather than changing the badge optimistically.
-3. **Add comment (US3)** — On the ticket detail view, submit a comment.
-   Expect: comment appears at the bottom of the comment history with its
-   timestamp (no author shown — this slice has no user identity). Submit
-   an empty comment: expect a validation error, no new comment added. On
-   a ticket seeded with more comments than one page (backend default page
-   size 20), expect a way to load additional pages rather than the whole
-   history loading at once (FR-006a).
+3. **Add comment (US3)** — On the ticket's read-only detail page, submit
+   a comment. Expect: comment appears at the bottom of the comment
+   history with its timestamp (no author shown — this slice has no user
+   identity). Submit an empty comment: expect a validation error, no new
+   comment added. On a ticket seeded with more comments than one page
+   (backend default page size 20), expect a way to load additional pages
+   rather than the whole history loading at once (FR-006a).
 4. **Search and filter (US4)** — On the ticket list, enter a keyword
    matching one ticket's title; expect only that ticket shown. Clear it,
    select a status filter; expect only tickets in that status shown.

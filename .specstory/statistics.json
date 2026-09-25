@@ -1,13 +1,22 @@
 {
   "sessions": {
-    "9334a934-3de7-4ef2-9cdb-7771daea890f": {
-      "user_message_count": 37,
-      "agent_message_count": 389,
-      "start_timestamp": "2026-09-21T02:40:51.536Z",
-      "end_timestamp": "2026-09-21T09:10:37.437Z",
-      "markdown_size_bytes": 664067,
+    "85615974-eaed-46bc-9181-bd8e3a0f4241": {
+      "user_message_count": 24,
+      "agent_message_count": 439,
+      "start_timestamp": "2026-09-22T09:03:35.914Z",
+      "end_timestamp": "2026-09-25T05:19:39.622Z",
+      "markdown_size_bytes": 733507,
       "provider": "claude",
-      "last_updated": "2026-09-21T09:10:37Z"
+      "last_updated": "2026-09-25T05:19:47Z"
+    },
+    "9334a934-3de7-4ef2-9cdb-7771daea890f": {
+      "user_message_count": 45,
+      "agent_message_count": 535,
+      "start_timestamp": "2026-09-21T02:40:51.536Z",
+      "end_timestamp": "2026-09-21T14:22:22.912Z",
+      "markdown_size_bytes": 895181,
+      "provider": "claude",
+      "last_updated": "2026-09-22T09:03:36Z"
     }
   }
 }

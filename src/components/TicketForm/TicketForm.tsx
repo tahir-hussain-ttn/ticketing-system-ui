@@ -5,25 +5,22 @@ import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import { PRIORITIES, type Priority } from "../../types/ticket";
-import { KNOWN_ASSIGNEES } from "../../config/assignees";
 import { HttpError } from "../../api/http";
 import { mapFieldErrors } from "../../utils/mapFieldErrors";
 import type { TicketCreateRequest } from "../../types/requests";
 
-const KNOWN_FIELDS = ["title", "description", "priority", "assignee"] as const;
+const KNOWN_FIELDS = ["title", "description", "priority"] as const;
 
 export interface TicketFormValues {
   title: string;
   description: string;
   priority: Priority | "";
-  assignee: string;
 }
 
 const EMPTY_VALUES: TicketFormValues = {
   title: "",
   description: "",
   priority: "",
-  assignee: "",
 };
 
 export interface TicketFormProps {
@@ -75,7 +72,6 @@ export function TicketForm({
         title: values.title,
         description: values.description,
         priority: values.priority as Priority,
-        assignee: values.assignee || undefined,
       });
       if (!initialValues) {
         setValues(EMPTY_VALUES);
@@ -148,24 +144,6 @@ export function TicketForm({
         {PRIORITIES.map((priority) => (
           <MenuItem key={priority} value={priority}>
             {priority}
-          </MenuItem>
-        ))}
-      </TextField>
-
-      <TextField
-        select
-        label="Assignee"
-        value={values.assignee}
-        onChange={(e) =>
-          setValues((v) => ({ ...v, assignee: e.target.value }))
-        }
-        error={Boolean(fieldErrors.assignee)}
-        helperText={fieldErrors.assignee ?? "Optional — leave unassigned"}
-      >
-        <MenuItem value="">Unassigned</MenuItem>
-        {KNOWN_ASSIGNEES.map((assignee) => (
-          <MenuItem key={assignee} value={assignee}>
-            {assignee}
           </MenuItem>
         ))}
       </TextField>

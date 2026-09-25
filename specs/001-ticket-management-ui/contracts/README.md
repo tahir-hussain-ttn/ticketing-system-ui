@@ -40,6 +40,22 @@ allowed to call these endpoints (Constitution Principle V).
 - `CommentResponse` has no author field — comments are shown by content
   and timestamp only.
 
+## Client-side route contract
+
+This feature also has an internal contract: the URLs the UI itself
+exposes for navigation (spec.md FR-016–FR-020, Edge Cases).
+
+| Route | Page | Notes |
+|---|---|---|
+| `/` | `TicketListPage` | List, search, filter |
+| `/tickets/new` | `TicketCreatePage` | On success, navigates to `/tickets/{id}` |
+| `/tickets/:ticketId` | `TicketDetailPage` | Read-only fields, status transitions, comments; no editable ticket fields |
+| `/tickets/:ticketId/edit` | `TicketEditPage` | Editable fields only; on success, navigates back to `/tickets/:ticketId` |
+
+`/tickets/:ticketId/edit` MUST work when navigated to directly (not only
+via the "Edit" link from `/tickets/:ticketId`) — it fetches the ticket by
+ID itself, the same way `/tickets/:ticketId` does.
+
 ## Mock contract for tests
 
 `tests/msw/handlers.ts` implements MSW handlers for all seven rows above,

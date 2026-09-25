@@ -171,3 +171,46 @@ it offers* as a usability aid while still treating the backend as the sole
 authority — this menu is a convenience, not a second implementation of the
 state machine; the backend's response is always what determines the
 ticket's actual status.
+
+## Decision: View/edit page split, post-save redirect, and breadcrumbs
+
+**Context**: The spec was amended to require a read-only ticket detail
+("View") page separate from an editable ("Edit") page, both creating and
+saving an edit redirect to the read-only detail page, and every page
+shows breadcrumb navigation (spec.md Clarifications, FR-003/004,
+FR-016–FR-020).
+
+**Decision**:
+- Two routes replace the single `/tickets/:id` page: `/tickets/:id`
+  (`TicketDetailPage`, read-only — ticket fields, `StatusTransitionMenu`,
+  `CommentList`/`CommentForm`, an "Edit" link to the edit route) and
+  `/tickets/:id/edit` (`TicketEditPage`, just `TicketForm` in edit mode).
+  `TicketCreatePage` already navigates to `/tickets/${ticket.id}` on
+  success (built in an earlier phase) — no change needed there.
+  `TicketEditPage` navigates to `/tickets/${id}` after a successful save.
+- A single generic `Breadcrumbs` component takes an ordered
+  `{ label: string; to?: string }[]` and renders MUI's `Breadcrumbs` +
+  `Link`/`Typography` (last segment, the current page, is plain text, not
+  a link). Each page builds its own segment array — e.g. the edit page:
+  `[{ label: "Tickets", to: "/" }, { label: ticket?.title ?? "Ticket", to: "/tickets/:id" }, { label: "Edit" }]`.
+  Pages that already fetch the ticket for their own content (detail,
+  edit) reuse that same `useTicket` data for the breadcrumb label — no
+  extra request.
+- No explicit "Cancel" button is added to the edit page: since nothing is
+  persisted until "Save" is clicked, navigating away via a breadcrumb (or
+  the browser back button) already satisfies "discard the in-progress
+  edit" (spec.md Edge Cases) for free, with no extra state to manage.
+
+**Rationale**: Matches the spec's explicit page-split requirement without
+inventing a shared view/edit mode toggle (which the constitution's
+Principle IV distinct-states guidance and the spec's own separate
+acceptance scenarios argue against); reusing already-fetched ticket data
+for breadcrumb labels avoids an unjustified extra request per page.
+
+**Alternatives considered**: A single page toggling between a read-only
+and an editable mode via local component state (rejected — the spec
+explicitly calls for separate pages/URLs, and a mode toggle would make
+"navigate directly to the edit page via a link" — spec.md Edge Cases —
+awkward to express as a URL); a dedicated "cancel" confirmation dialog on
+the edit page (rejected — not requested by the spec, and unnecessary
+since no save happens until the explicit Save action).

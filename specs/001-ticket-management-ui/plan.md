@@ -11,12 +11,15 @@ create, list, view, update, comment on, search, and filter tickets, and
 drive tickets through their status lifecycle — with the existing backend
 (documented in `backend-api-doc.json`, OpenAPI 3.1) as the sole source of
 truth for persistence, field validation, and status-transition legality.
+Viewing a ticket (read-only, with comments and status transitions) and
+editing its fields are separate pages/routes, not one combined page;
+creating or saving an edit both redirect to the ticket's read-only detail
+page, and every page shows breadcrumb navigation back to its ancestors.
 The frontend consumes seven existing endpoints (list, create, get-by-id,
 update, transition, list-comments (paginated), add-comment) through one
-typed API client, using
-Material UI for the mandated Material Design theme, TanStack Query for
-data fetching/caching/error state, and React Router for list/detail/create
-navigation.
+typed API client, using Material UI for the mandated Material Design
+theme, TanStack Query for data fetching/caching/error state, and React
+Router for list/detail/edit/create navigation.
 
 ## Technical Context
 
@@ -57,7 +60,11 @@ list shown in the UI is sourced from the dedicated, paginated
 `GET /api/v1/tickets/{id}/comments` endpoint, not that embedded array;
 every write MUST surface the backend's `ApiError` (`fieldErrors`,
 `message`) rather than assuming success; comments have no author field —
-this slice has no user identity/authentication
+this slice has no user identity/authentication; viewing a ticket
+(`/tickets/:id`) and editing it (`/tickets/:id/edit`) are separate routes
+— the view route never renders editable fields, and the edit route
+navigates back to the view route on a successful save (spec.md FR-003,
+FR-004, FR-019)
 
 **Scale/Scope**: 7 backend endpoints, 4 user stories (create+list,
 view+update+transition, comment, search+filter), single user role, no
@@ -76,7 +83,7 @@ authentication in this slice
 | V. Typed API Contract Layer | Single `src/api/` module (`http.ts` + per-resource functions) is the only place `fetch` is called; every function's request/response types match `src/types/` | PASS |
 | VI. No Secrets in Client Code | Backend base URL read from `VITE_API_BASE_URL` env var; `.env*.local` git-ignored; no credentials needed for this slice (no auth) | PASS |
 | Stack: Material Design mandated | MUI selected as the Material Design implementation | PASS |
-| Stack: Accessibility | MUI form controls carry labels by default; custom interactive elements (status-transition buttons) get explicit `aria-label`s | PASS |
+| Stack: Accessibility | MUI form controls carry labels by default; custom interactive elements (status-transition buttons) get explicit `aria-label`s; MUI `Breadcrumbs` carries `aria-label="breadcrumb"` and a navigable `<nav>` landmark by default | PASS |
 | Dev Workflow: new-dependency justification | See `research.md` Decisions — each added dependency (MUI, React Router, TanStack Query, MSW, Vite) is justified against the constitution's "no unjustified dependency" gate | PASS |
 
 No violations requiring the Complexity Tracking table.
@@ -117,18 +124,20 @@ src/
 │   └── useAddComment.ts
 ├── components/             # Presentational + form components
 │   ├── TicketList/
-│   ├── TicketForm/          # shared by create + edit
+│   ├── TicketForm/          # shared by create + edit pages
 │   ├── StatusBadge/
 │   ├── PriorityBadge/
 │   ├── StatusTransitionMenu/ # offers only valid next-statuses
 │   ├── CommentList/
-│   └── CommentForm/
+│   ├── CommentForm/
+│   └── Breadcrumbs/          # generic {label, to?}[] trail, used by every page
 ├── pages/                   # Route-level containers
 │   ├── TicketListPage.tsx
 │   ├── TicketCreatePage.tsx
-│   └── TicketDetailPage.tsx
+│   ├── TicketDetailPage.tsx  # read-only: fields, StatusTransitionMenu, comments, "Edit" link
+│   └── TicketEditPage.tsx    # TicketForm only; navigates to TicketDetailPage on save
 ├── routes/
-│   └── router.tsx
+│   └── router.tsx            # "/", "/tickets/new", "/tickets/:ticketId", "/tickets/:ticketId/edit"
 ├── theme/
 │   └── muiTheme.ts
 ├── config/

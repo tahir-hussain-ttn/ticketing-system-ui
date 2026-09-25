@@ -4,6 +4,8 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import { Link as RouterLink } from "react-router-dom";
 import { StatusBadge } from "../StatusBadge/StatusBadge";
 import { PriorityBadge } from "../PriorityBadge/PriorityBadge";
 import type { Ticket } from "../../types/ticket";
@@ -36,6 +38,8 @@ export function TicketList({
           <TableCell>Status</TableCell>
           <TableCell>Priority</TableCell>
           <TableCell>Assignee</TableCell>
+          <TableCell>Creator</TableCell>
+          <TableCell />
         </TableRow>
       </TableHead>
       <TableBody>
@@ -48,7 +52,17 @@ export function TicketList({
             <TableCell>
               <PriorityBadge priority={ticket.priority} />
             </TableCell>
-            <TableCell>{ticket.assignee ?? "Unassigned"}</TableCell>
+            <TableCell>{ticket.assignee?.name ?? "Unassigned"}</TableCell>
+            <TableCell>{ticket.creator.name}</TableCell>
+            <TableCell align="right">
+              <Button
+                component={RouterLink}
+                to={`/tickets/${ticket.id}`}
+                size="small"
+              >
+                View
+              </Button>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

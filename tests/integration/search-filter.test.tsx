@@ -4,8 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { TicketListPage } from "../../src/pages/TicketListPage";
-import { resetTicketStore } from "../msw/handlers";
+import { AuthProvider } from "../../src/context/AuthContext";
+import { resetTicketStore, seedSession, MOCK_USERS } from "../msw/handlers";
 import type { Ticket } from "../../src/types/ticket";
+
+const creator = MOCK_USERS.find((u) => u.id === "u-admin-1")!;
 
 function seedTickets(): Ticket[] {
   const now = new Date().toISOString();
@@ -15,6 +18,8 @@ function seedTickets(): Ticket[] {
     description: "Routine request.",
     priority: "LOW",
     status: i % 2 === 0 ? "OPEN" : "IN_PROGRESS",
+    assignee: null,
+    creator,
     createdAt: now,
     updatedAt: now,
   }));
@@ -24,6 +29,8 @@ function seedTickets(): Ticket[] {
     description: "Affects remote workers.",
     priority: "HIGH",
     status: "OPEN",
+    assignee: null,
+    creator,
     createdAt: now,
     updatedAt: now,
   });
@@ -32,12 +39,15 @@ function seedTickets(): Ticket[] {
 }
 
 function renderPage() {
+  seedSession(creator);
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <TicketListPage />
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter>
+          <TicketListPage />
+        </MemoryRouter>
+      </AuthProvider>
     </QueryClientProvider>,
   );
 }

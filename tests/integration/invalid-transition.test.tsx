@@ -4,8 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
-import { resetTicketStore, ticketStore } from "../msw/handlers";
+import { AuthProvider } from "../../src/context/AuthContext";
+import { resetTicketStore, ticketStore, seedSession, MOCK_USERS } from "../msw/handlers";
 import type { Ticket } from "../../src/types/ticket";
+
+const creator = MOCK_USERS.find((u) => u.id === "u-general-1")!;
 
 function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
   const now = new Date().toISOString();
@@ -15,6 +18,8 @@ function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
     description: "Prod server unreachable.",
     priority: "CRITICAL",
     status: "OPEN",
+    assignee: null,
+    creator,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -24,14 +29,17 @@ function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
 }
 
 function renderDetail() {
+  seedSession(creator);
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/tickets/1"]}>
-        <Routes>
-          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter initialEntries={["/tickets/1"]}>
+          <Routes>
+            <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AuthProvider>
     </QueryClientProvider>,
   );
 }

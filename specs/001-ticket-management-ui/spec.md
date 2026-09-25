@@ -17,6 +17,9 @@
 - Q: Should keyword search also match ticket comments, or only title and description? → A: Title and description only
 - Q: Should the comment history show who wrote each comment? → A: No — this slice has no user identity/authentication, so comments have no author field; the backend's `Comment` shape is `id`, `ticketId`, `createdAt`, `content` only
 - Q: Should the backend return all of a ticket's comments in one response, or paginated? → A: Paginated — the UI MUST support loading additional pages of comments (FR-006a)
+- Q: Should viewing and editing a ticket be the same page, or separate pages? → A: Separate — a read-only "View" page (reached from the ticket list, shows comments) and a distinct "Edit" page (reached from the View page, for updating fields), rather than one combined view/edit page (FR-016, FR-017)
+- Q: Where should the user land after creating or updating a ticket? → A: The ticket's (read-only) detail page in both cases (FR-018, FR-019)
+- Q: Should the UI show breadcrumb navigation? → A: Yes, on every page, reflecting the current location (FR-020)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,7 +41,9 @@ list with the data entered.
 
 1. **Given** the ticket list is open, **When** the agent fills in title,
    description, and priority and submits the create form, **Then** a new
-   ticket is created with status `OPEN` and appears in the ticket list.
+   ticket is created with status `OPEN`, the agent is taken to that
+   ticket's read-only detail page, and the ticket also appears in the
+   ticket list.
 2. **Given** the create-ticket form, **When** the agent submits it with a
    missing required field (e.g. no title), **Then** the system MUST prevent
    submission and display a clear, field-specific error message.
@@ -50,44 +55,57 @@ list with the data entered.
 
 ### User Story 2 - View and Update Ticket Details (Priority: P1)
 
-A support agent opens a ticket from the list to see its full details, edits
-its title, description, priority, or assignee, and moves it through its
-lifecycle (for example from `OPEN` to `IN_PROGRESS`) as work progresses.
+A support agent clicks "View" on a ticket in the list to open a read-only
+detail page showing its full details and comment history, and moves it
+through its lifecycle (for example from `OPEN` to `IN_PROGRESS`) from
+there. To change the ticket's title, description, priority, or assignee,
+the agent clicks "Edit" on the detail page to open a separate edit page,
+saves, and is returned to the (now updated) read-only detail page.
 
 **Why this priority**: Ticket triage is the core operational workflow — an
-agent must be able to update and progress a ticket, not just create and
-view it, for the tool to be usable day to day.
+agent must be able to view, progress, and update a ticket, not just create
+it, for the tool to be usable day to day.
 
-**Independent Test**: Can be fully tested by opening an existing ticket,
-changing its priority/assignee, saving, and confirming the change persists
-and displays correctly; and by attempting a valid and an invalid status
-change and confirming the correct outcome for each.
+**Independent Test**: Can be fully tested by clicking "View" on a ticket
+from the list and confirming its read-only details and comments display;
+by clicking "Edit", changing its priority/assignee, saving, and confirming
+the agent lands back on the detail page with the change reflected; and by
+attempting a valid and an invalid status change from the detail page and
+confirming the correct outcome for each.
 
 **Acceptance Scenarios**:
 
-1. **Given** an open ticket's detail view, **When** the agent edits the
-   title, description, priority, or assignee and saves, **Then** the
-   updated values are reflected immediately in the detail view and in the
-   ticket list.
-2. **Given** a ticket in status `OPEN`, **When** the agent changes its
-   status to `IN_PROGRESS`, **Then** the change is accepted and the new
-   status is displayed.
-3. **Given** a ticket in status `CLOSED`, **When** the agent attempts to
-   change its status back to `OPEN`, **Then** the system MUST reject the
-   change and display a clear message explaining the transition is not
-   allowed.
-4. **Given** a ticket update that fails backend validation (e.g. title
+1. **Given** the ticket list, **When** the agent clicks "View" on a
+   ticket, **Then** a read-only detail page opens showing that ticket's
+   full details and its comment history, with no editable fields on this
+   page.
+2. **Given** a ticket's read-only detail page, **When** the agent clicks
+   "Edit", **Then** a separate edit page opens with the ticket's title,
+   description, priority, and assignee pre-filled and editable.
+3. **Given** the edit page, **When** the agent changes the title,
+   description, priority, or assignee and saves successfully, **Then**
+   the agent is returned to the ticket's read-only detail page and the
+   updated values are reflected there and in the ticket list.
+4. **Given** a ticket's read-only detail page in status `OPEN`, **When**
+   the agent changes its status to `IN_PROGRESS`, **Then** the change is
+   accepted and the new status is displayed on that same page.
+5. **Given** a ticket's read-only detail page in status `CLOSED`, **When**
+   the agent attempts to change its status back to `OPEN`, **Then** the
+   system MUST reject the change and display a clear message explaining
+   the transition is not allowed.
+6. **Given** a ticket edit that fails backend validation (e.g. title
    cleared to empty), **When** the agent attempts to save, **Then** the
-   system MUST display the validation error next to the relevant field and
-   MUST NOT discard the agent's unsaved edits.
+   system MUST display the validation error next to the relevant field on
+   the edit page and MUST NOT discard the agent's unsaved edits or
+   navigate away from the edit page.
 
 ---
 
 ### User Story 3 - Add Comments to a Ticket (Priority: P2)
 
-A support agent adds a comment to a ticket to record progress, findings, or
-communication history, and can see the full comment history when reviewing
-the ticket later.
+A support agent adds a comment to a ticket, from the ticket's read-only
+detail page, to record progress, findings, or communication history, and
+can see the full comment history when reviewing the ticket later.
 
 **Why this priority**: Comments capture the working history of a ticket;
 valuable but the ticket lifecycle (US1/US2) is usable without them.
@@ -161,6 +179,13 @@ tickets in that status are shown.
   comments and then adds a new comment? The system MUST ensure the new
   comment is visible without requiring the agent to manually re-request
   every previously loaded page.
+- What happens when the agent cancels out of the edit page without saving
+  (e.g. via a breadcrumb or back navigation)? The system MUST discard the
+  in-progress edit and MUST NOT apply any change to the ticket.
+- What happens when the agent navigates directly to a ticket's edit page
+  (e.g. a bookmarked or shared link) without having visited its detail
+  page first? The system MUST still load and display the edit page
+  correctly, with breadcrumbs reflecting that ticket's location.
 
 ## Requirements *(mandatory)*
 
@@ -171,10 +196,13 @@ tickets in that status are shown.
   unassigned.
 - **FR-002**: The system MUST display a list of all tickets, each showing
   at minimum title, status, priority, and assignee.
-- **FR-003**: The system MUST allow the user to open a ticket to view its
-  full details, including access to its comment history.
+- **FR-003**: The system MUST allow the user to open a ticket, via a
+  "View" action from the ticket list, to a read-only detail page showing
+  its full details and its comment history; this page MUST NOT contain
+  editable ticket fields.
 - **FR-004**: The system MUST allow the user to update a ticket's title,
-  description, priority, and assignee from the ticket detail view.
+  description, priority, and assignee from a dedicated ticket edit page,
+  reached via an "Edit" action on the ticket's read-only detail page.
 - **FR-005**: The system MUST allow the user to change a ticket's assignee,
   independently of other field edits, by selecting from a fixed list of
   known users (no free-text assignee entry).
@@ -208,6 +236,22 @@ tickets in that status are shown.
   detail view without requiring a full page reload.
 - **FR-015**: The system MUST distinguish, in the UI, between "list is
   empty" and "search/filter returned no matches" states.
+- **FR-016**: The system MUST provide a "View" action on each ticket in
+  the ticket list that navigates to that ticket's read-only detail page.
+- **FR-017**: The system MUST provide an "Edit" action on the ticket's
+  read-only detail page that navigates to a separate edit page for that
+  ticket, pre-filled with its current title, description, priority, and
+  assignee.
+- **FR-018**: After a ticket is successfully created, the system MUST
+  navigate the user to that ticket's read-only detail page.
+- **FR-019**: After a ticket edit is successfully saved, the system MUST
+  navigate the user back to that ticket's read-only detail page, showing
+  the updated values.
+- **FR-020**: The system MUST display breadcrumb navigation on every page
+  reflecting the user's current location (e.g. "Tickets" on the list page;
+  "Tickets / [Ticket Title]" on the detail page; "Tickets / [Ticket Title]
+  / Edit" on the edit page), with each ancestor breadcrumb segment
+  navigable back to that page.
 
 ### Key Entities
 
@@ -265,3 +309,10 @@ tickets in that status are shown.
   list's is a reasonable default) and is not mandated by this
   specification beyond "additional pages MUST be loadable on request"
   (FR-006a).
+- Status transitions and adding comments are actions taken from the
+  ticket's read-only detail page (not the edit page), since neither
+  changes the ticket's title/description/priority/assignee fields that
+  page's "Edit" action is scoped to.
+- While a ticket's detail/edit page is still loading its data, the
+  breadcrumb segment for that ticket MAY show a placeholder (e.g. "Ticket")
+  instead of its title until the title is available.

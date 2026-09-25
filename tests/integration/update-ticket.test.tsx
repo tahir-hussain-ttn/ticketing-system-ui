@@ -4,8 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
-import { resetTicketStore } from "../msw/handlers";
+import { TicketEditPage } from "../../src/pages/TicketEditPage";
+import { AuthProvider } from "../../src/context/AuthContext";
+import { resetTicketStore, seedSession, MOCK_USERS } from "../msw/handlers";
 import type { Ticket } from "../../src/types/ticket";
+
+const creator = MOCK_USERS.find((u) => u.id === "u-general-1")!;
 
 function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
   const now = new Date().toISOString();
@@ -15,7 +19,8 @@ function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
     description: "Black screen on power-on.",
     priority: "MEDIUM",
     status: "OPEN",
-    assignee: undefined,
+    assignee: null,
+    creator,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -24,43 +29,48 @@ function seedTicket(overrides: Partial<Ticket> = {}): Ticket {
   return ticket;
 }
 
-function renderDetail(ticketId = "1") {
+function renderEdit(ticketId = "1") {
+  seedSession(creator);
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/tickets/${ticketId}`]}>
-        <Routes>
-          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter initialEntries={[`/tickets/${ticketId}/edit`]}>
+          <Routes>
+            <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+            <Route
+              path="/tickets/:ticketId/edit"
+              element={<TicketEditPage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AuthProvider>
     </QueryClientProvider>,
   );
 }
 
 describe("Update ticket", () => {
-  it("updates title/description/priority/assignee and reflects them immediately (FR-004)", async () => {
+  it("updates title/description/priority and returns to the read-only detail page with the change reflected (FR-004, FR-019)", async () => {
     seedTicket();
     const user = userEvent.setup();
-    renderDetail();
+    renderEdit();
 
     const priorityField = await screen.findByLabelText(/priority/i);
     await user.click(priorityField);
     await user.click(await screen.findByRole("option", { name: "HIGH" }));
 
-    const assigneeField = screen.getByLabelText(/assignee/i);
-    await user.click(assigneeField);
-    await user.click(await screen.findByRole("option", { name: "Alice Chen" }));
-
     await user.click(screen.getByRole("button", { name: /save changes/i }));
 
-    expect(await screen.findByDisplayValue("HIGH")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Alice Chen")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Laptop won't boot" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("HIGH")).toBeInTheDocument();
   });
 
-  it("blocks an empty-title save and preserves the edit rather than discarding it (FR-013)", async () => {
+  it("blocks an empty-title save and preserves the edit rather than discarding it or navigating away (FR-013)", async () => {
     seedTicket();
     const user = userEvent.setup();
-    renderDetail();
+    renderEdit();
 
     const titleField = await screen.findByLabelText(/title/i);
     await user.clear(titleField);
@@ -70,5 +80,6 @@ describe("Update ticket", () => {
       await screen.findByText(/title is required/i),
     ).toBeInTheDocument();
     expect(titleField).toHaveValue("");
+    expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
   });
 });

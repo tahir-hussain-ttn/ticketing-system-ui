@@ -6,18 +6,23 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TicketCreatePage } from "../../src/pages/TicketCreatePage";
 import { TicketListPage } from "../../src/pages/TicketListPage";
 import { TicketDetailPage } from "../../src/pages/TicketDetailPage";
+import { AuthProvider } from "../../src/context/AuthContext";
+import { seedSession, MOCK_USERS } from "../msw/handlers";
 
 function renderApp() {
+  seedSession(MOCK_USERS.find((u) => u.id === "u-general-1")!);
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/tickets/new"]}>
-        <Routes>
-          <Route path="/" element={<TicketListPage />} />
-          <Route path="/tickets/new" element={<TicketCreatePage />} />
-          <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter initialEntries={["/tickets/new"]}>
+          <Routes>
+            <Route path="/" element={<TicketListPage />} />
+            <Route path="/tickets/new" element={<TicketCreatePage />} />
+            <Route path="/tickets/:ticketId" element={<TicketDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AuthProvider>
     </QueryClientProvider>,
   );
 }
@@ -36,7 +41,9 @@ describe("Create ticket", () => {
     await user.click(await screen.findByRole("option", { name: "HIGH" }));
     await user.click(screen.getByRole("button", { name: /create ticket/i }));
 
-    expect(await screen.findByText("Printer is broken")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Printer is broken" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Open")).toBeInTheDocument();
   });
 
